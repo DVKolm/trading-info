@@ -1,0 +1,141 @@
+import React, { useState, useEffect } from 'react';
+import { WebApp } from '@twa-dev/types';
+import Sidebar from './components/Sidebar';
+import LessonViewer from './components/LessonViewer';
+import { LessonStructure, Lesson } from './types';
+import './App.css';
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: WebApp;
+    };
+  }
+}
+
+const App: React.FC = () => {
+  const [lessonStructure, setLessonStructure] = useState<LessonStructure[]>([]);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Initialize Telegram WebApp
+    if (window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+      
+      // Set theme
+      tg.setHeaderColor('#1e1e1e');
+      tg.setBackgroundColor('#1e1e1e');
+    }
+
+    // Load lesson structure
+    fetchLessonStructure();
+  }, []);
+
+  const fetchLessonStructure = async () => {
+    try {
+      setLoading(true);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/lessons/structure`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch lesson structure');
+      }
+      const data = await response.json();
+      setLessonStructure(data.structure);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLessonSelect = async (lessonPath: string) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/lessons/content/${lessonPath}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch lesson content');
+      }
+      const lessonData = await response.json();
+      setSelectedLesson(lessonData);
+      setSidebarOpen(false); // Close sidebar on mobile after selection
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load lesson');
+    }
+  };
+
+  const handleSearch = async (query: string): Promise<any[]> => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/lessons/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+      const data = await response.json();
+      return data.results;
+    } catch (err) {
+      console.error('Search error:', err);
+      return [];
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Loading lessons...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <div className="error-message">
+          <h2>Error</h2>
+          <p>{error}</p>
+          <button onClick={fetchLessonStructure} className="retry-button">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <Sidebar
+        structure={lessonStructure}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onLessonSelect={handleLessonSelect}
+        onSearch={handleSearch}
+      />
+      
+      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        {selectedLesson ? (
+          <LessonViewer 
+            lesson={selectedLesson} 
+            onNavigateToLesson={handleLessonSelect}
+          />
+        ) : (
+          <div className="welcome-screen">
+            <h1>Welcome to Learning App</h1>
+            <p>Select a lesson from the sidebar to get started</p>
+            <button 
+              className="open-sidebar-btn"
+              onClick={() => setSidebarOpen(true)}
+            >
+              Open Lessons
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default App;
