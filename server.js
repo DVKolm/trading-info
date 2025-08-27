@@ -310,6 +310,78 @@ app.get('/api/lessons/search', async (req, res) => {
   }
 });
 
+// Subscription verification endpoint
+app.post('/api/subscription/verify', async (req, res) => {
+  try {
+    const { telegram_user_id, verified } = req.body;
+    
+    // Здесь можно добавить логику для сохранения статуса подписки в базе данных
+    // Пока просто логируем и возвращаем успех
+    console.log(`Subscription verification for user ${telegram_user_id}: ${verified}`);
+    
+    // TODO: Добавить реальную проверку через Telegram Bot API
+    // const telegram_bot_token = process.env.TELEGRAM_BOT_TOKEN;
+    // const telegram_channel_id = process.env.TELEGRAM_CHANNEL_ID;
+    // 
+    // if (telegram_bot_token && telegram_channel_id && telegram_user_id) {
+    //   try {
+    //     const response = await fetch(`https://api.telegram.org/bot${telegram_bot_token}/getChatMember`, {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({
+    //         chat_id: telegram_channel_id,
+    //         user_id: telegram_user_id
+    //       })
+    //     });
+    //     
+    //     const result = await response.json();
+    //     
+    //     if (result.ok) {
+    //       const member_status = result.result.status;
+    //       const is_subscribed = ['member', 'administrator', 'creator'].includes(member_status);
+    //       
+    //       return res.json({ 
+    //         verified: is_subscribed,
+    //         status: member_status 
+    //       });
+    //     }
+    //   } catch (error) {
+    //     console.error('Error checking Telegram subscription:', error);
+    //   }
+    // }
+    
+    // Простая проверка без Bot API (возвращаем успех)
+    res.json({ 
+      verified: true,
+      message: 'Subscription verified successfully' 
+    });
+  } catch (error) {
+    console.error('Error verifying subscription:', error);
+    res.status(500).json({ error: 'Failed to verify subscription' });
+  }
+});
+
+// Check subscription status
+app.get('/api/subscription/status/:telegram_user_id', async (req, res) => {
+  try {
+    const { telegram_user_id } = req.params;
+    
+    // Здесь можно добавить проверку статуса из базы данных
+    // Пока просто возвращаем false для новых пользователей
+    console.log(`Checking subscription status for user ${telegram_user_id}`);
+    
+    res.json({ 
+      subscribed: false,
+      message: 'Please verify your subscription' 
+    });
+  } catch (error) {
+    console.error('Error checking subscription status:', error);
+    res.status(500).json({ error: 'Failed to check subscription status' });
+  }
+});
+
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {

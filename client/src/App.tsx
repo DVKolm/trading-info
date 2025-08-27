@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WebApp } from '@twa-dev/types';
 import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
+import SubscriptionCheck from './components/SubscriptionCheck';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
 
@@ -19,6 +20,8 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -32,9 +35,48 @@ const App: React.FC = () => {
       tg.setBackgroundColor('#1e1e1e');
     }
 
-    // Load lesson structure
-    fetchLessonStructure();
+    // Check subscription status first
+    checkSubscriptionStatus();
   }, []);
+
+  const checkSubscriptionStatus = async () => {
+    try {
+      setCheckingSubscription(true);
+      
+      // Проверяем localStorage
+      const savedSubscription = localStorage.getItem('telegram_subscription_verified');
+      if (savedSubscription === 'true') {
+        setIsSubscribed(true);
+        await fetchLessonStructure();
+        return;
+      }
+
+      // Если в localStorage нет подтверждения, проверяем через API (опционально)
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+      if (telegramUserId) {
+        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+        const response = await fetch(`${apiUrl}/api/subscription/status/${telegramUserId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.subscribed) {
+            setIsSubscribed(true);
+            localStorage.setItem('telegram_subscription_verified', 'true');
+            await fetchLessonStructure();
+            return;
+          }
+        }
+      }
+      
+      // Если подписка не подтверждена
+      setIsSubscribed(false);
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+      setIsSubscribed(false);
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
 
   const fetchLessonStructure = async () => {
     try {
@@ -82,6 +124,23 @@ const App: React.FC = () => {
       return [];
     }
   };
+
+  const handleSubscriptionVerified = () => {
+    setIsSubscribed(true);
+    fetchLessonStructure();
+  };
+
+  if (checkingSubscription) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Checking subscription...</div>
+      </div>
+    );
+  }
+
+  if (!isSubscribed) {
+    return <SubscriptionCheck onSubscriptionVerified={handleSubscriptionVerified} />;
+  }
 
   if (loading) {
     return (
