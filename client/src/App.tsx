@@ -39,7 +39,7 @@ const App: React.FC = () => {
   const fetchLessonStructure = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
       const response = await fetch(`${apiUrl}/api/lessons/structure`);
       if (!response.ok) {
         throw new Error('Failed to fetch lesson structure');
@@ -55,7 +55,7 @@ const App: React.FC = () => {
 
   const handleLessonSelect = async (lessonPath: string) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
       const response = await fetch(`${apiUrl}/api/lessons/content/${lessonPath}`);
       if (!response.ok) {
         throw new Error('Failed to fetch lesson content');
@@ -70,7 +70,7 @@ const App: React.FC = () => {
 
   const handleSearch = async (query: string): Promise<any[]> => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
       const response = await fetch(`${apiUrl}/api/lessons/search?q=${encodeURIComponent(query)}`);
       if (!response.ok) {
         throw new Error('Search failed');

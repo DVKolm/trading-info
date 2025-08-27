@@ -9,3 +9,5 @@ services:
         value: production
       - key: NPM_CONFIG_PRODUCTION
         value: false
+      - key: REACT_APP_API_URL
+        value: ""

@@ -26,7 +26,7 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson 
         // Create base64 encoded path to avoid URL encoding issues with Cyrillic
         const imagePath = `${lessonDir}/${actualFilename}`;
         const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
         return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;
       }
       
@@ -44,7 +44,7 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson 
       const linkText = decodeURIComponent(href.replace('#internal-link-', ''));
       
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
         const response = await fetch(`${apiUrl}/api/lessons/resolve/${encodeURIComponent(linkText)}`);
         const data = await response.json();
         
