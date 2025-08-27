@@ -23,8 +23,28 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
   }, [onSubscriptionVerified]);
 
   const handleSubscribeClick = () => {
-    // Открываем Telegram канал
-    window.open(TELEGRAM_CHANNEL_URL, '_blank');
+    // Открываем Telegram канал через WebApp API
+    if (window.Telegram?.WebApp) {
+      try {
+        // Используем специальный метод для открытия Telegram ссылок
+        if (typeof window.Telegram.WebApp.openTelegramLink === 'function') {
+          window.Telegram.WebApp.openTelegramLink(TELEGRAM_CHANNEL_URL);
+        } else if (typeof window.Telegram.WebApp.openLink === 'function') {
+          // Альтернативный метод для старых версий
+          window.Telegram.WebApp.openLink(TELEGRAM_CHANNEL_URL);
+        } else {
+          // Используем обычный window.open как последний resort
+          window.open(TELEGRAM_CHANNEL_URL, '_blank');
+        }
+      } catch (error) {
+        console.error('Error opening Telegram link:', error);
+        // Fallback на обычное открытие ссылки
+        window.open(TELEGRAM_CHANNEL_URL, '_blank');
+      }
+    } else {
+      // Fallback для случаев вне Telegram
+      window.open(TELEGRAM_CHANNEL_URL, '_blank');
+    }
     setStep('redirected');
   };
 

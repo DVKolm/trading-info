@@ -9,7 +9,19 @@ import './App.css';
 declare global {
   interface Window {
     Telegram?: {
-      WebApp: WebApp;
+      WebApp: WebApp & {
+        openTelegramLink?: (url: string) => void;
+        openLink?: (url: string) => void;
+        ready: () => void;
+        expand: () => void;
+        setHeaderColor: (color: string) => void;
+        setBackgroundColor: (color: string) => void;
+        initDataUnsafe?: {
+          user?: {
+            id?: number;
+          };
+        };
+      };
     };
   }
 }
