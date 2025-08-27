@@ -9,6 +9,7 @@ interface SubscriptionCheckProps {
 const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVerified }) => {
   const [isChecking, setIsChecking] = useState(false);
   const [step, setStep] = useState<'initial' | 'redirected' | 'verified'>('initial');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const TELEGRAM_CHANNEL_URL = 'https://t.me/DailyTradiBlog';
   const TELEGRAM_CHANNEL_USERNAME = '@DailyTradiBlog';
@@ -23,6 +24,9 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
   }, [onSubscriptionVerified]);
 
   const handleSubscribeClick = () => {
+    // Очищаем предыдущие ошибки
+    setErrorMessage(null);
+    
     // Открываем Telegram канал через WebApp API
     if (window.Telegram?.WebApp) {
       try {
@@ -50,36 +54,57 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
 
   const handleVerifySubscription = async () => {
     setIsChecking(true);
+    setErrorMessage(null);
     
     try {
-      // Здесь можно добавить реальную проверку через Telegram Bot API
-      // Пока используем простую задержку для имитации проверки
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       
-      // Сохраняем статус подписки
-      localStorage.setItem('telegram_subscription_verified', 'true');
-      
-      // Отправляем запрос на сервер для сохранения статуса (опционально)
-      try {
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-        await fetch(`${apiUrl}/api/subscription/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            telegram_user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id,
-            verified: true
-          })
-        });
-      } catch (error) {
-        console.error('Failed to save subscription status:', error);
+      if (!telegramUserId) {
+        setErrorMessage('Не удалось получить данные пользователя Telegram. Попробуйте перезагрузить приложение.');
+        return;
       }
       
-      setStep('verified');
-      onSubscriptionVerified();
+      // Отправляем запрос на сервер для проверки подписки
+      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      const response = await fetch(`${apiUrl}/api/subscription/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          telegram_user_id: telegramUserId,
+          verified: true
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.verified) {
+        // Пользователь подписан
+        localStorage.setItem('telegram_subscription_verified', 'true');
+        setStep('verified');
+        onSubscriptionVerified();
+      } else {
+        // Пользователь не подписан
+        localStorage.removeItem('telegram_subscription_verified');
+        
+        let errorMessage = 'Вы не подписаны на канал @DailyTradiBlog.';
+        
+        if (result.message && !result.message.includes('not subscribed')) {
+          errorMessage = result.message;
+        } else if (result.error) {
+          errorMessage = `Ошибка: ${result.error}`;
+        }
+        
+        setErrorMessage(errorMessage);
+        setStep('initial');
+      }
     } catch (error) {
       console.error('Subscription verification failed:', error);
+      localStorage.removeItem('telegram_subscription_verified');
+      
+      setErrorMessage('Произошла ошибка при проверке подписки. Проверьте подключение к интернету и попробуйте снова.');
+      setStep('initial');
     } finally {
       setIsChecking(false);
     }
@@ -132,6 +157,18 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
           </div>
         </div>
         
+        {errorMessage && (
+          <div className="error-message">
+            <p>{errorMessage}</p>
+            <button 
+              className="close-error-button"
+              onClick={() => setErrorMessage(null)}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <div className="subscription-actions">
           {step === 'initial' && (
             <button 

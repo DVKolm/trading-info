@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs-extra');
@@ -315,51 +316,105 @@ app.post('/api/subscription/verify', async (req, res) => {
   try {
     const { telegram_user_id, verified } = req.body;
     
-    // Здесь можно добавить логику для сохранения статуса подписки в базе данных
-    // Пока просто логируем и возвращаем успех
-    console.log(`Subscription verification for user ${telegram_user_id}: ${verified}`);
+    console.log(`Subscription verification request for user ${telegram_user_id}`);
     
-    // TODO: Добавить реальную проверку через Telegram Bot API
-    // const telegram_bot_token = process.env.TELEGRAM_BOT_TOKEN;
-    // const telegram_channel_id = process.env.TELEGRAM_CHANNEL_ID;
-    // 
-    // if (telegram_bot_token && telegram_channel_id && telegram_user_id) {
-    //   try {
-    //     const response = await fetch(`https://api.telegram.org/bot${telegram_bot_token}/getChatMember`, {
-    //       method: 'POST',
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //       },
-    //       body: JSON.stringify({
-    //         chat_id: telegram_channel_id,
-    //         user_id: telegram_user_id
-    //       })
-    //     });
-    //     
-    //     const result = await response.json();
-    //     
-    //     if (result.ok) {
-    //       const member_status = result.result.status;
-    //       const is_subscribed = ['member', 'administrator', 'creator'].includes(member_status);
-    //       
-    //       return res.json({ 
-    //         verified: is_subscribed,
-    //         status: member_status 
-    //       });
-    //     }
-    //   } catch (error) {
-    //     console.error('Error checking Telegram subscription:', error);
-    //   }
-    // }
+    // Проверяем режим разработки
+    if (process.env.DEVELOPMENT_MODE === 'true') {
+      console.log('Development mode: skipping real subscription check');
+      return res.json({ 
+        verified: true,
+        message: 'Development mode: subscription verified automatically',
+        development: true
+      });
+    }
     
-    // Простая проверка без Bot API (возвращаем успех)
-    res.json({ 
-      verified: true,
-      message: 'Subscription verified successfully' 
-    });
+    // Реальная проверка через Telegram Bot API
+    const telegram_bot_token = process.env.TELEGRAM_BOT_TOKEN;
+    const telegram_channel_id = process.env.TELEGRAM_CHANNEL_ID;
+    
+    if (!telegram_bot_token) {
+      console.error('TELEGRAM_BOT_TOKEN not configured');
+      return res.status(500).json({ 
+        error: 'Telegram bot not configured',
+        verified: false 
+      });
+    }
+    
+    if (!telegram_channel_id) {
+      console.error('TELEGRAM_CHANNEL_ID not configured');
+      return res.status(500).json({ 
+        error: 'Telegram channel not configured',
+        verified: false 
+      });
+    }
+    
+    if (!telegram_user_id) {
+      console.error('Telegram user ID not provided');
+      return res.status(400).json({ 
+        error: 'User ID required for verification',
+        verified: false 
+      });
+    }
+    
+    try {
+      // Проверяем подписку через Telegram Bot API
+      const response = await fetch(`https://api.telegram.org/bot${telegram_bot_token}/getChatMember`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: telegram_channel_id,
+          user_id: telegram_user_id
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok) {
+        const member_status = result.result.status;
+        const is_subscribed = ['member', 'administrator', 'creator'].includes(member_status);
+        
+        console.log(`User ${telegram_user_id} subscription status: ${member_status}, subscribed: ${is_subscribed}`);
+        
+        return res.json({ 
+          verified: is_subscribed,
+          status: member_status,
+          message: is_subscribed ? 'Subscription verified successfully' : 'User is not subscribed to the channel'
+        });
+      } else {
+        console.error('Telegram API error:', result);
+        
+        // Если пользователь не найден в чате, значит не подписан
+        if (result.error_code === 400 && result.description.includes('user not found')) {
+          return res.json({
+            verified: false,
+            message: 'User is not subscribed to the channel',
+            status: 'not_member'
+          });
+        }
+        
+        // Другие ошибки API
+        return res.status(500).json({ 
+          error: 'Failed to check subscription via Telegram API',
+          verified: false,
+          telegram_error: result.description
+        });
+      }
+    } catch (apiError) {
+      console.error('Error calling Telegram API:', apiError);
+      return res.status(500).json({ 
+        error: 'Failed to verify subscription',
+        verified: false,
+        details: apiError.message
+      });
+    }
   } catch (error) {
     console.error('Error verifying subscription:', error);
-    res.status(500).json({ error: 'Failed to verify subscription' });
+    res.status(500).json({ 
+      error: 'Internal server error during subscription verification',
+      verified: false
+    });
   }
 });
 
@@ -368,14 +423,67 @@ app.get('/api/subscription/status/:telegram_user_id', async (req, res) => {
   try {
     const { telegram_user_id } = req.params;
     
-    // Здесь можно добавить проверку статуса из базы данных
-    // Пока просто возвращаем false для новых пользователей
     console.log(`Checking subscription status for user ${telegram_user_id}`);
     
-    res.json({ 
-      subscribed: false,
-      message: 'Please verify your subscription' 
-    });
+    // Проверяем режим разработки
+    if (process.env.DEVELOPMENT_MODE === 'true') {
+      console.log('Development mode: returning subscribed status');
+      return res.json({ 
+        subscribed: true,
+        message: 'Development mode: user is considered subscribed',
+        development: true
+      });
+    }
+    
+    // Реальная проверка через Telegram Bot API
+    const telegram_bot_token = process.env.TELEGRAM_BOT_TOKEN;
+    const telegram_channel_id = process.env.TELEGRAM_CHANNEL_ID;
+    
+    if (!telegram_bot_token || !telegram_channel_id) {
+      console.log('Bot not configured, returning unsubscribed status');
+      return res.json({ 
+        subscribed: false,
+        message: 'Please verify your subscription' 
+      });
+    }
+    
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${telegram_bot_token}/getChatMember`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: telegram_channel_id,
+          user_id: telegram_user_id
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok) {
+        const member_status = result.result.status;
+        const is_subscribed = ['member', 'administrator', 'creator'].includes(member_status);
+        
+        return res.json({ 
+          subscribed: is_subscribed,
+          status: member_status,
+          message: is_subscribed ? 'User is subscribed' : 'Please verify your subscription'
+        });
+      } else {
+        // Если ошибка, возвращаем как неподписанного
+        return res.json({ 
+          subscribed: false,
+          message: 'Please verify your subscription' 
+        });
+      }
+    } catch (apiError) {
+      console.error('Error checking subscription via API:', apiError);
+      return res.json({ 
+        subscribed: false,
+        message: 'Please verify your subscription' 
+      });
+    }
   } catch (error) {
     console.error('Error checking subscription status:', error);
     res.status(500).json({ error: 'Failed to check subscription status' });

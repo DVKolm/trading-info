@@ -55,32 +55,48 @@ const App: React.FC = () => {
     try {
       setCheckingSubscription(true);
       
-      // Проверяем localStorage
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+      
+      // Проверяем localStorage сначала
       const savedSubscription = localStorage.getItem('telegram_subscription_verified');
-      if (savedSubscription === 'true') {
+      
+      // Если есть сохраненная подписка И есть ID пользователя, проверяем через API
+      if (savedSubscription === 'true' && telegramUserId) {
+        try {
+          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          const response = await fetch(`${apiUrl}/api/subscription/status/${telegramUserId}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.subscribed) {
+              // Подписка подтверждена через API
+              setIsSubscribed(true);
+              await fetchLessonStructure();
+              return;
+            } else {
+              // Подписка больше не активна, удаляем из localStorage
+              localStorage.removeItem('telegram_subscription_verified');
+              console.log('Subscription status changed: user is no longer subscribed');
+            }
+          } else {
+            console.error('Failed to check subscription status via API');
+          }
+        } catch (apiError) {
+          console.error('Error checking subscription via API:', apiError);
+          // Если API недоступен, доверяем localStorage
+          setIsSubscribed(true);
+          await fetchLessonStructure();
+          return;
+        }
+      } else if (savedSubscription === 'true' && !telegramUserId) {
+        // Нет ID пользователя, но есть сохраненная подписка (может быть тестирование)
         setIsSubscribed(true);
         await fetchLessonStructure();
         return;
       }
 
-      // Если в localStorage нет подтверждения, проверяем через API (опционально)
-      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-      if (telegramUserId) {
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-        const response = await fetch(`${apiUrl}/api/subscription/status/${telegramUserId}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.subscribed) {
-            setIsSubscribed(true);
-            localStorage.setItem('telegram_subscription_verified', 'true');
-            await fetchLessonStructure();
-            return;
-          }
-        }
-      }
-      
-      // Если подписка не подтверждена
+      // Если нет сохраненной подписки или API показал, что не подписан
       setIsSubscribed(false);
     } catch (error) {
       console.error('Error checking subscription status:', error);
