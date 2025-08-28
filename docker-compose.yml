@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Основное приложение
+  trading-app:
+    build: .
+    container_name: trading-info-app
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    volumes:
+      # Монтируем уроки для возможности обновления без пересборки
+      - ./lessons:/app/lessons:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/lessons/structure', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - trading-network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: trading-info-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      # Логи nginx
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      trading-app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+  # Watchtower для автообновления (опционально)
+  watchtower:
+    image: containrrr/watchtower
+    container_name: trading-info-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_CLEANUP=true
+    restart: unless-stopped
+    profiles:
+      - autoupdate
+
+networks:
+  trading-network:
+    driver: bridge
+
+# Volumes для персистентных данных
+volumes:
+  nginx-logs:
+    driver: local
