@@ -9,8 +9,8 @@ WORKDIR /app/client
 COPY client/package*.json ./
 
 # Устанавливаем ВСЕ зависимости (включая devDependencies для react-scripts)
-RUN npm config set timeout 120000
-RUN npm ci
+RUN npm config set timeout 120000 && \
+    npm ci --no-audit --no-fund
 
 # Копируем исходный код фронтенда
 COPY client/ .
@@ -22,8 +22,8 @@ RUN npm run build
 FROM node:18-alpine
 
 # Создаем пользователя для безопасности
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
 
 WORKDIR /app
 
@@ -31,7 +31,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Устанавливаем только production зависимости для бэкенда
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev --no-audit --no-fund --prefer-offline && \
+    npm cache clean --force
 
 # Копируем исходный код сервера
 COPY server.js ./
