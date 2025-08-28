@@ -51,10 +51,8 @@ app.post('/api/lesson-image', express.json(), async (req, res) => {
 
 // GET route for images - search by filename in all lesson directories  
 app.get('/api/image/:encodedPath', async (req, res) => {
-  console.log('GET /api/image/:encodedPath called with:', req.params.encodedPath);
   try {
     const filename = Buffer.from(req.params.encodedPath, 'base64').toString('utf8');
-    console.log('Decoded filename:', filename);
     
     // Search for the file in all lesson directories
     const lessonsDir = path.join(__dirname, 'lessons');
@@ -73,7 +71,6 @@ app.get('/api/image/:encodedPath', async (req, res) => {
     }
     
     if (!foundFilePath) {
-      console.log('File not found in any lesson directory:', filename);
       return res.status(404).json({ error: 'File not found', filename });
     }
     
@@ -82,11 +79,9 @@ app.get('/api/image/:encodedPath', async (req, res) => {
     const resolvedLessonsDir = path.resolve(lessonsDir);
     
     if (!resolvedPath.startsWith(resolvedLessonsDir)) {
-      console.log('Access denied for path:', resolvedPath);
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    console.log('Serving file:', resolvedPath);
     res.sendFile(resolvedPath);
   } catch (error) {
     console.error('Error serving image:', error);
