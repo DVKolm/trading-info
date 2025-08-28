@@ -20,7 +20,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client/build')));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 
 // API route to serve lesson images by POST with JSON body to avoid URL encoding issues
 app.post('/api/lesson-image', express.json(), async (req, res) => {
@@ -49,32 +54,48 @@ app.post('/api/lesson-image', express.json(), async (req, res) => {
   }
 });
 
-// Simple GET route for images using base64 encoded paths
+// GET route for images - search by filename in all lesson directories  
 app.get('/api/image/:encodedPath', async (req, res) => {
+  console.log('GET /api/image/:encodedPath called with:', req.params.encodedPath);
   try {
-    const decodedPath = Buffer.from(req.params.encodedPath, 'base64').toString('utf8');
+    const filename = Buffer.from(req.params.encodedPath, 'base64').toString('utf8');
+    console.log('Decoded filename:', filename);
     
-    const filePath = path.join(__dirname, 'lessons', decodedPath);
+    // Search for the file in all lesson directories
+    const lessonsDir = path.join(__dirname, 'lessons');
+    const entries = await fs.readdir(lessonsDir, { withFileTypes: true });
+    
+    let foundFilePath = null;
+    
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const possiblePath = path.join(lessonsDir, entry.name, filename);
+        if (await fs.pathExists(possiblePath)) {
+          foundFilePath = possiblePath;
+          break;
+        }
+      }
+    }
+    
+    if (!foundFilePath) {
+      console.log('File not found in any lesson directory:', filename);
+      return res.status(404).json({ error: 'File not found', filename });
+    }
     
     // Security check
-    const resolvedPath = path.resolve(filePath);
-    const resolvedLessonsDir = path.resolve(path.join(__dirname, 'lessons'));
+    const resolvedPath = path.resolve(foundFilePath);
+    const resolvedLessonsDir = path.resolve(lessonsDir);
     
     if (!resolvedPath.startsWith(resolvedLessonsDir)) {
+      console.log('Access denied for path:', resolvedPath);
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Check if file exists
-    const exists = await fs.pathExists(filePath);
-    
-    if (exists) {
-      res.sendFile(resolvedPath);
-    } else {
-      res.status(404).json({ error: 'File not found', path: filePath });
-    }
+    console.log('Serving file:', resolvedPath);
+    res.sendFile(resolvedPath);
   } catch (error) {
     console.error('Error serving image:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -172,11 +193,31 @@ async function scanLessonsDirectory(dirPath, relativePath = '') {
       }
     }
     
-    // Sort items: folders first, then files, both alphabetically
+    // Sort items: folders first, then files, with proper numeric sorting for lessons
     items.sort((a, b) => {
       if (a.type !== b.type) {
         return a.type === 'folder' ? -1 : 1;
       }
+      
+      // Extract lesson numbers for proper numeric sorting
+      const getLessonNumber = (name) => {
+        const match = name.match(/Урок\s+(\d+)/i);
+        return match ? parseInt(match[1], 10) : 999;
+      };
+      
+      const aLessonNum = getLessonNumber(a.name);
+      const bLessonNum = getLessonNumber(b.name);
+      
+      // If both are lessons, sort by number
+      if (aLessonNum !== 999 && bLessonNum !== 999) {
+        return aLessonNum - bLessonNum;
+      }
+      
+      // If only one is a lesson, lessons go first
+      if (aLessonNum !== 999) return -1;
+      if (bLessonNum !== 999) return 1;
+      
+      // Otherwise, sort alphabetically
       return a.name.localeCompare(b.name, 'ru');
     });
     
@@ -500,8 +541,12 @@ app.get('/api/subscription/status/:telegram_user_id', async (req, res) => {
 // Serve static files AFTER API routes
 app.use(express.static(path.join(__dirname, 'client/build')));
 
-// Serve React app for all other routes
+// Serve React app for all NON-API routes
 app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
   res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 

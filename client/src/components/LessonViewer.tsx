@@ -28,21 +28,14 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
         
         // Use the first variant (remove spaces) as it matches our file naming convention
         const filename = cleanLinkText.replace(/\s+/g, ''); // "Pastedimage20250826123046.png"
-        const imagePath = `${lessonDir}/${filename}`;
-        const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
         const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
         
-        console.log('Processing image:', {
-          originalText: cleanLinkText,
-          filename: filename,
-          lessonPath: lesson.path,
-          lessonDir: lessonDir,
-          imagePath: imagePath,
-          encodedPath: encodedPath,
-          finalUrl: `${apiUrl}/api/image/${encodedPath}`
-        });
+        // Use shorter URL format: /api/lesson-image with POST
+        // Since markdown can't do POST requests, we'll need to use a custom component approach
+        // For now, let's try with a simpler GET approach using filename only
+        const encodedFilename = btoa(filename);
         
-        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;
+        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
       }
       
       // Create a clickable link that could trigger navigation to another lesson
