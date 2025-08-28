@@ -22,34 +22,27 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
       
       // Check if it's an image (has image extension)
       if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-        // Try different filename variants (with and without spaces)
-        const variants = [
-          cleanLinkText.replace(/\s+/g, ''), // Remove all spaces: "Pastedimage20250826123046.png"
-          cleanLinkText, // Keep original: "Pasted image 20250826123046.png"
-          cleanLinkText.replace(/^Pasted\s+image\s+/i, 'Pastedimage'), // Replace "Pasted image " with "Pastedimage"
-        ];
-        
+        // Clean filename by removing spaces to match our file naming convention
         // Extract lesson directory name from lesson path
         const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '');
         
-        // Try each variant
-        for (const filename of variants) {
-          const imagePath = `${lessonDir}/${filename}`;
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Trying image variant:', {
-              originalText: cleanLinkText,
-              filename: filename,
-              lessonPath: lesson.path,
-              lessonDir: lessonDir,
-              imagePath: imagePath
-            });
-          }
-          
-          const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
-          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-          return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;
+        // Use the first variant (remove spaces) as it matches our file naming convention
+        const filename = cleanLinkText.replace(/\s+/g, ''); // "Pastedimage20250826123046.png"
+        const imagePath = `${lessonDir}/${filename}`;
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Processing image:', {
+            originalText: cleanLinkText,
+            filename: filename,
+            lessonPath: lesson.path,
+            lessonDir: lessonDir,
+            imagePath: imagePath
+          });
         }
+        
+        const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
+        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;
       }
       
       // Create a clickable link that could trigger navigation to another lesson
