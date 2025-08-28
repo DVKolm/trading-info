@@ -8,6 +8,12 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - DEVELOPMENT_MODE=${DEVELOPMENT_MODE:-false}
+      - DOMAIN=${DOMAIN}
+    env_file:
+      - .env
     volumes:
       # Монтируем уроки для возможности обновления без пересборки
       - ./lessons:/app/lessons:ro
