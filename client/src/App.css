@@ -968,6 +968,99 @@ td {
   }
 }
 
+/* Global Continue Reading Panel */
+.global-continue-reading {
+  margin-bottom: 2rem;
+}
+
+.continue-reading-card {
+  background: linear-gradient(135deg, #2a2a3a 0%, #1e1e2e 100%);
+  border: 1px solid #404040;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: slideInDown 0.3s ease-out;
+}
+
+.continue-reading-icon {
+  font-size: 2rem;
+  min-width: 3rem;
+  text-align: center;
+}
+
+.continue-reading-info {
+  flex: 1;
+}
+
+.continue-reading-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #4CAF50;
+  font-size: 1.1rem;
+}
+
+.lesson-title {
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.last-read-time {
+  margin: 0;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.continue-reading-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.continue-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.continue-btn:hover {
+  background: #45a049;
+}
+
+.dismiss-btn {
+  background: transparent;
+  color: #888;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: color 0.2s ease;
+}
+
+.dismiss-btn:hover {
+  color: #ccc;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* Continue Reading Panel */
 .continue-reading-panel {
   position: sticky;

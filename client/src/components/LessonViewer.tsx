@@ -141,45 +141,6 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 };
 
 const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
-  const [showContinueReading, setShowContinueReading] = useState(false);
-  const [savedScrollPosition, setSavedScrollPosition] = useState(0);
-
-  useEffect(() => {
-    // Check if there's a saved scroll position for this lesson
-    const savedPositions = localStorage.getItem('lesson_scroll_positions');
-    if (savedPositions) {
-      try {
-        const positionsObj = JSON.parse(savedPositions);
-        const position = positionsObj[lesson.path];
-        if (position && position > 200) { // Only show if scrolled significantly
-          setSavedScrollPosition(position);
-          setShowContinueReading(true);
-        }
-      } catch (error) {
-        console.error('Error loading scroll positions:', error);
-      }
-    }
-  }, [lesson.path]);
-
-  const handleContinueReading = () => {
-    const lessonViewer = document.querySelector('.lesson-viewer');
-    const mainContent = document.querySelector('.main-content');
-    
-    if (lessonViewer) {
-      lessonViewer.scrollTop = savedScrollPosition;
-    } else if (mainContent) {
-      mainContent.scrollTop = savedScrollPosition;
-    } else {
-      window.scrollTo(0, savedScrollPosition);
-    }
-    
-    setShowContinueReading(false);
-  };
-
-  const handleStartFromBeginning = () => {
-    setShowContinueReading(false);
-    // Scroll will naturally stay at top
-  };
 
   // Process Obsidian-style internal links [[Link Name]] and images
   const processObsidianLinks = (content: string) => {
@@ -245,33 +206,6 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
 
   return (
     <div className="lesson-viewer">
-      {/* Continue Reading Panel */}
-      {showContinueReading && (
-        <div className="continue-reading-panel">
-          <div className="continue-reading-content">
-            <BookOpen size={20} />
-            <div className="continue-reading-text">
-              <h3>Продолжить чтение?</h3>
-              <p>Вы читали этот урок ранее. Хотите продолжить с того места, где остановились?</p>
-            </div>
-            <div className="continue-reading-buttons">
-              <button 
-                className="continue-button"
-                onClick={handleContinueReading}
-              >
-                Читать с того места
-              </button>
-              <button 
-                className="start-over-button"
-                onClick={handleStartFromBeginning}
-              >
-                Начать сначала
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="lesson-header">
         {lesson.frontmatter.title && (
           <h1 className="lesson-title">{lesson.frontmatter.title}</h1>

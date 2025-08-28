@@ -36,6 +36,8 @@ const App: React.FC = () => {
   const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<string[]>([]);
   const [scrollPositions, setScrollPositions] = useState<Map<string, number>>(new Map());
+  const [lastReadLesson, setLastReadLesson] = useState<{path: string, title: string, timestamp: number, scrollPosition: number} | null>(null);
+  const [showContinueReading, setShowContinueReading] = useState(false);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -52,6 +54,7 @@ const App: React.FC = () => {
     // Always load lesson structure first, then check subscription
     fetchLessonStructure();
     checkSubscriptionStatus();
+    loadLastReadLesson();
   }, []);
 
   // Set up scroll tracking when lesson changes
@@ -76,6 +79,9 @@ const App: React.FC = () => {
             // Save to localStorage
             const positionsObj = Object.fromEntries(newPositions);
             localStorage.setItem('lesson_scroll_positions', JSON.stringify(positionsObj));
+            
+            // Update last read lesson info
+            updateLastReadLesson(selectedLesson.path, selectedLesson.frontmatter?.title || 'Без названия', scrollTop);
             
             return newPositions;
           });
@@ -205,8 +211,7 @@ const App: React.FC = () => {
     }
 
     const savedPosition = currentPositions.get(lessonPath);
-    // Don't restore position automatically - let the LessonViewer component handle it
-    // This prevents conflicts with the "Continue Reading" panel
+    // Don't restore position automatically - let the global continue reading handle it
   };
 
   const handleLessonSelect = async (lessonPath: string) => {
@@ -225,6 +230,9 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setSidebarOpen(false); // Close sidebar on mobile after selection
+      
+      // Update last read lesson
+      updateLastReadLesson(lessonPath, lessonData.frontmatter?.title || 'Без названия', 0);
       
       // Restore scroll position for this lesson
       restoreScrollPosition(lessonPath);
@@ -287,7 +295,7 @@ const App: React.FC = () => {
     const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
     const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
     
-    const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
+const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
       const result: LessonStructure[] = [];
       structure.forEach(item => {
         if (item.type === 'file') {
@@ -331,6 +339,64 @@ const App: React.FC = () => {
     }
     
     return null;
+  };
+
+  const loadLastReadLesson = () => {
+    try {
+      const savedLastRead = localStorage.getItem('last_read_lesson');
+      if (savedLastRead) {
+        const lastRead = JSON.parse(savedLastRead);
+        // Show continue reading if it was read within last 7 days and has significant progress
+        const daysSinceRead = (Date.now() - lastRead.timestamp) / (1000 * 60 * 60 * 24);
+        if (daysSinceRead <= 7 && lastRead.scrollPosition > 200) {
+          setLastReadLesson(lastRead);
+          setShowContinueReading(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading last read lesson:', error);
+    }
+  };
+
+  const updateLastReadLesson = (path: string, title: string, scrollPosition: number) => {
+    const lastRead = {
+      path,
+      title,
+      timestamp: Date.now(),
+      scrollPosition
+    };
+    
+    try {
+      localStorage.setItem('last_read_lesson', JSON.stringify(lastRead));
+      setLastReadLesson(lastRead);
+    } catch (error) {
+      console.error('Error saving last read lesson:', error);
+    }
+  };
+
+  const handleContinueReading = () => {
+    if (lastReadLesson) {
+      handleLessonSelect(lastReadLesson.path);
+      // Restore scroll position after a delay to ensure content is loaded
+      setTimeout(() => {
+        const lessonViewer = document.querySelector('.lesson-viewer');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (lessonViewer) {
+          lessonViewer.scrollTop = lastReadLesson.scrollPosition;
+        } else if (mainContent) {
+          mainContent.scrollTop = lastReadLesson.scrollPosition;
+        } else {
+          window.scrollTo(0, lastReadLesson.scrollPosition);
+        }
+      }, 500);
+      
+      setShowContinueReading(false);
+    }
+  };
+
+  const handleDismissContinueReading = () => {
+    setShowContinueReading(false);
   };
 
   if (loading) {
@@ -392,6 +458,36 @@ const App: React.FC = () => {
           />
         ) : (
           <div className="welcome-screen">
+            {/* Global Continue Reading Panel */}
+            {showContinueReading && lastReadLesson && (
+              <div className="global-continue-reading">
+                <div className="continue-reading-card">
+                  <div className="continue-reading-icon">📖</div>
+                  <div className="continue-reading-info">
+                    <h3>Продолжить чтение?</h3>
+                    <p className="lesson-title">{lastReadLesson.title}</p>
+                    <p className="last-read-time">
+                      Последний раз читали {new Date(lastReadLesson.timestamp).toLocaleDateString('ru-RU')}
+                    </p>
+                  </div>
+                  <div className="continue-reading-actions">
+                    <button 
+                      className="continue-btn"
+                      onClick={handleContinueReading}
+                    >
+                      Продолжить
+                    </button>
+                    <button 
+                      className="dismiss-btn"
+                      onClick={handleDismissContinueReading}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <h1>Добро пожаловать в H.E.A.R.T!</h1>
             <p>Ваш надежный проводник в мире трейдинга</p>
             
