@@ -23,8 +23,8 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
       // Check if it's an image (has image extension)
       if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
         // Clean filename by removing spaces to match our file naming convention
-        // Extract lesson directory name from lesson path
-        const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '');
+        // Extract lesson directory name from lesson path (only the last part, not full path)
+        const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '').replace(/^.*\//, '');
         
         // Use the first variant (remove spaces) as it matches our file naming convention
         const filename = cleanLinkText.replace(/\s+/g, ''); // "Pastedimage20250826123046.png"

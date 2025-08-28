@@ -41,7 +41,6 @@ app.post('/api/lesson-image', express.json(), async (req, res) => {
     if (await fs.pathExists(filePath)) {
       res.sendFile(resolvedPath);
     } else {
-      console.log('File not found:', filePath);
       res.status(404).json({ error: 'File not found', path: filePath });
     }
   } catch (error) {
@@ -54,6 +53,7 @@ app.post('/api/lesson-image', express.json(), async (req, res) => {
 app.get('/api/image/:encodedPath', async (req, res) => {
   try {
     const decodedPath = Buffer.from(req.params.encodedPath, 'base64').toString('utf8');
+    
     const filePath = path.join(__dirname, 'lessons', decodedPath);
     
     // Security check
@@ -65,10 +65,11 @@ app.get('/api/image/:encodedPath', async (req, res) => {
     }
     
     // Check if file exists
-    if (await fs.pathExists(filePath)) {
+    const exists = await fs.pathExists(filePath);
+    
+    if (exists) {
       res.sendFile(resolvedPath);
     } else {
-      console.log('File not found:', filePath);
       res.status(404).json({ error: 'File not found', path: filePath });
     }
   } catch (error) {
@@ -496,6 +497,8 @@ app.get('/api/subscription/status/:telegram_user_id', async (req, res) => {
   }
 });
 
+// Serve static files AFTER API routes
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
