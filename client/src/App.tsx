@@ -81,7 +81,7 @@ const App: React.FC = () => {
             localStorage.setItem('lesson_scroll_positions', JSON.stringify(positionsObj));
             
             // Update last read lesson info
-            updateLastReadLesson(selectedLesson.path, selectedLesson.frontmatter?.title || 'Без названия', scrollTop);
+            updateLastReadLesson(selectedLesson.path, selectedLesson, scrollTop);
             
             return newPositions;
           });
@@ -232,7 +232,7 @@ const App: React.FC = () => {
       setSidebarOpen(false); // Close sidebar on mobile after selection
       
       // Update last read lesson
-      updateLastReadLesson(lessonPath, lessonData.frontmatter?.title || 'Без названия', 0);
+      updateLastReadLesson(lessonPath, lessonData, 0);
       
       // Restore scroll position for this lesson
       restoreScrollPosition(lessonPath);
