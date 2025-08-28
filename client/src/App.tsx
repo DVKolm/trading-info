@@ -33,7 +33,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<string[]>([]);
 
   useEffect(() => {
@@ -76,8 +76,6 @@ const App: React.FC = () => {
 
   const checkSubscriptionStatus = async () => {
     try {
-      setCheckingSubscription(true);
-      
       const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       
       // Проверяем localStorage сначала
@@ -121,8 +119,6 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error checking subscription status:', error);
       setIsSubscribed(false);
-    } finally {
-      setCheckingSubscription(false);
     }
   };
 
@@ -240,12 +236,10 @@ const App: React.FC = () => {
     return null;
   };
 
-  if (checkingSubscription || loading) {
+  if (loading) {
     return (
       <div className="loading-container">
-        <div className="loading-spinner">
-          {checkingSubscription ? 'Checking subscription...' : 'Loading lessons...'}
-        </div>
+        <div className="loading-spinner">Loading lessons...</div>
       </div>
     );
   }

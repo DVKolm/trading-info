@@ -54,21 +54,28 @@ app.get('/api/image/:encodedPath', async (req, res) => {
   try {
     const filename = Buffer.from(req.params.encodedPath, 'base64').toString('utf8');
     
-    // Search for the file in all lesson directories
+    // Recursive search for the file in all lesson directories
     const lessonsDir = path.join(__dirname, 'lessons');
-    const entries = await fs.readdir(lessonsDir, { withFileTypes: true });
     
-    let foundFilePath = null;
-    
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const possiblePath = path.join(lessonsDir, entry.name, filename);
-        if (await fs.pathExists(possiblePath)) {
-          foundFilePath = possiblePath;
-          break;
+    const searchRecursively = async (dir) => {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        
+        if (entry.isDirectory()) {
+          // Search in subdirectory
+          const result = await searchRecursively(fullPath);
+          if (result) return result;
+        } else if (entry.name === filename) {
+          // Found the file
+          return fullPath;
         }
       }
-    }
+      return null;
+    };
+    
+    const foundFilePath = await searchRecursively(lessonsDir);
     
     if (!foundFilePath) {
       return res.status(404).json({ error: 'File not found', filename });
