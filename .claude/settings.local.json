@@ -10,7 +10,8 @@
       "Bash(npm run build:*)",
       "WebFetch(domain:localhost)",
       "Bash(node:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

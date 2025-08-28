@@ -62,21 +62,23 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
       ref={imgRef}
       className={`lazy-image-container ${className || ''}`}
       style={{
-        ...style,
-        minHeight: '200px',
-        backgroundColor: '#f0f0f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         position: 'relative',
-        overflow: 'hidden'
+        display: 'inline-block',
+        width: '100%'
       }}
     >
       {!inView && (
         <div style={{
-          color: '#666',
+          minHeight: '200px',
+          backgroundColor: 'rgba(40, 40, 50, 0.3)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(255, 255, 255, 0.5)',
           fontSize: '14px',
-          textAlign: 'center'
+          textAlign: 'center',
+          margin: '1rem 0'
         }}>
           📷 Изображение загрузится при прокрутке
         </div>
@@ -84,11 +86,16 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
       
       {inView && !loaded && !error && (
         <div style={{
-          color: '#666',
+          minHeight: '200px',
+          backgroundColor: 'rgba(40, 40, 50, 0.3)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(255, 255, 255, 0.5)',
           fontSize: '14px',
           textAlign: 'center',
-          position: 'absolute',
-          zIndex: 1
+          margin: '1rem 0'
         }}>
           ⏳ Загрузка изображения...
         </div>
@@ -101,24 +108,30 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
           onLoad={handleLoad}
           onError={handleError}
           style={{
-            ...style,
             maxWidth: '100%',
             height: 'auto',
             borderRadius: '8px',
             margin: '1rem 0',
             opacity: loaded ? 1 : 0,
             transition: 'opacity 0.3s ease-in-out',
-            position: loaded ? 'static' : 'absolute'
+            display: loaded ? 'block' : 'none'
           }}
         />
       )}
 
       {error && (
         <div style={{
+          minHeight: '100px',
+          backgroundColor: 'rgba(80, 40, 40, 0.3)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           color: '#ff6b6b',
           fontSize: '14px',
           textAlign: 'center',
-          padding: '20px'
+          padding: '20px',
+          margin: '1rem 0'
         }}>
           ❌ Не удалось загрузить изображение: {alt}
         </div>
