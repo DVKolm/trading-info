@@ -140,6 +140,11 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setSidebarOpen(false); // Close sidebar on mobile after selection
+      
+      // Scroll to top when new lesson loads
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
@@ -180,6 +185,11 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setLessonHistory(newHistory);
+      
+      // Scroll to top when returning to previous lesson
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load previous lesson');
     }

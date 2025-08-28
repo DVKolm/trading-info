@@ -6,6 +6,12 @@ const path = require('path');
 const { marked } = require('marked');
 const matter = require('gray-matter');
 
+// Configure marked to suppress deprecated warnings
+marked.setOptions({
+  mangle: false,
+  headerIds: false,
+});
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 

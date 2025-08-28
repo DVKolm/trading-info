@@ -30,10 +30,10 @@ const WaterBackground: React.FC<WaterBackgroundProps> = ({ className }) => {
 
     // Water simulation parameters
     const waves = [
-      { amplitude: 30, frequency: 0.02, speed: 0.01, phase: 0 },
-      { amplitude: 20, frequency: 0.025, speed: 0.015, phase: Math.PI / 3 },
-      { amplitude: 15, frequency: 0.03, speed: 0.008, phase: Math.PI / 2 },
-      { amplitude: 25, frequency: 0.018, speed: 0.012, phase: Math.PI },
+      { amplitude: 60, frequency: 0.02, speed: 0.02, phase: 0 },
+      { amplitude: 40, frequency: 0.025, speed: 0.03, phase: Math.PI / 3 },
+      { amplitude: 30, frequency: 0.03, speed: 0.016, phase: Math.PI / 2 },
+      { amplitude: 50, frequency: 0.018, speed: 0.024, phase: Math.PI },
     ];
 
     const animate = () => {
@@ -45,8 +45,8 @@ const WaterBackground: React.FC<WaterBackgroundProps> = ({ className }) => {
 
       // Create multiple layers of water effects
       for (let layer = 0; layer < 3; layer++) {
-        const layerOpacity = 0.1 + (layer * 0.05);
-        const layerOffset = layer * 50;
+        const layerOpacity = 0.2 + (layer * 0.1);
+        const layerOffset = layer * 80;
 
         // Create gradient for this layer
         const gradient = ctx.createRadialGradient(
@@ -54,8 +54,8 @@ const WaterBackground: React.FC<WaterBackgroundProps> = ({ className }) => {
           canvas.width / 2, canvas.height / 2, canvas.width / 2
         );
         
-        gradient.addColorStop(0, `rgba(40, 40, 40, ${layerOpacity * 2})`);
-        gradient.addColorStop(0.5, `rgba(60, 60, 60, ${layerOpacity})`);
+        gradient.addColorStop(0, `rgba(80, 80, 80, ${layerOpacity * 2})`);
+        gradient.addColorStop(0.5, `rgba(120, 120, 120, ${layerOpacity})`);
         gradient.addColorStop(1, 'transparent');
 
         ctx.save();
