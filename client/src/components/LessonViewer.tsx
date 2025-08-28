@@ -22,26 +22,34 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
       
       // Check if it's an image (has image extension)
       if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-        // Convert filename by removing spaces (Obsidian adds spaces but actual files don't have them)
-        const actualFilename = cleanLinkText.replace(/\s+/g, '');
+        // Try different filename variants (with and without spaces)
+        const variants = [
+          cleanLinkText.replace(/\s+/g, ''), // Remove all spaces: "Pastedimage20250826123046.png"
+          cleanLinkText, // Keep original: "Pasted image 20250826123046.png"
+          cleanLinkText.replace(/^Pasted\s+image\s+/i, 'Pastedimage'), // Replace "Pasted image " with "Pastedimage"
+        ];
+        
         // Extract lesson directory name from lesson path
         const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '');
-        // Create base64 encoded path to avoid URL encoding issues with Cyrillic
-        const imagePath = `${lessonDir}/${actualFilename}`;
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Image processing:', {
-            originalText: cleanLinkText,
-            actualFilename: actualFilename,
-            lessonPath: lesson.path,
-            lessonDir: lessonDir,
-            imagePath: imagePath
-          });
+        // Try each variant
+        for (const filename of variants) {
+          const imagePath = `${lessonDir}/${filename}`;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Trying image variant:', {
+              originalText: cleanLinkText,
+              filename: filename,
+              lessonPath: lesson.path,
+              lessonDir: lessonDir,
+              imagePath: imagePath
+            });
+          }
+          
+          const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
+          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;
         }
-        
-        const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;
       }
       
       // Create a clickable link that could trigger navigation to another lesson
