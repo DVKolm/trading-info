@@ -9,8 +9,7 @@ WORKDIR /app/client
 COPY client/package*.json ./
 
 # Устанавливаем ВСЕ зависимости (включая devDependencies для react-scripts)
-RUN npm config set timeout 120000 && \
-    npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 # Копируем исходный код фронтенда
 COPY client/ .
