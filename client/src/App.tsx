@@ -34,6 +34,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [lessonHistory, setLessonHistory] = useState<string[]>([]);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -125,6 +126,11 @@ const App: React.FC = () => {
 
   const handleLessonSelect = async (lessonPath: string) => {
     try {
+      // Add current lesson to history if we have one selected
+      if (selectedLesson && selectedLesson.path !== lessonPath) {
+        setLessonHistory(prev => [...prev, selectedLesson.path]);
+      }
+      
       const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
       const response = await fetch(`${apiUrl}/api/lessons/content/${lessonPath}`);
       if (!response.ok) {
@@ -156,6 +162,58 @@ const App: React.FC = () => {
   const handleSubscriptionVerified = () => {
     setIsSubscribed(true);
     fetchLessonStructure();
+  };
+
+  const handleBackNavigation = async () => {
+    if (lessonHistory.length === 0) return;
+    
+    const previousLessonPath = lessonHistory[lessonHistory.length - 1];
+    const newHistory = lessonHistory.slice(0, -1);
+    
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      const response = await fetch(`${apiUrl}/api/lessons/content/${previousLessonPath}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch lesson content');
+      }
+      const lessonData = await response.json();
+      setSelectedLesson(lessonData);
+      setLessonHistory(newHistory);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load previous lesson');
+    }
+  };
+
+  // Function to get next lesson based on lesson structure
+  const getNextLesson = (currentPath: string): string | null => {
+    const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
+      const result: LessonStructure[] = [];
+      structure.forEach(item => {
+        if (item.type === 'file') {
+          result.push(item);
+        }
+        if (item.children) {
+          result.push(...flattenStructure(item.children));
+        }
+      });
+      return result;
+    };
+
+    const allLessons = flattenStructure(lessonStructure);
+    const mainLessons = allLessons.filter(lesson => 
+      lesson.name.startsWith('Урок ') && lesson.name.includes('.md')
+    ).sort((a, b) => {
+      const aNum = parseInt(a.name.match(/Урок (\d+)/)?.[1] || '0');
+      const bNum = parseInt(b.name.match(/Урок (\d+)/)?.[1] || '0');
+      return aNum - bNum;
+    });
+
+    const currentIndex = mainLessons.findIndex(lesson => lesson.path === currentPath);
+    if (currentIndex >= 0 && currentIndex < mainLessons.length - 1) {
+      return mainLessons[currentIndex + 1].path;
+    }
+    
+    return null;
   };
 
   if (checkingSubscription) {
@@ -207,6 +265,8 @@ const App: React.FC = () => {
           <LessonViewer 
             lesson={selectedLesson} 
             onNavigateToLesson={handleLessonSelect}
+            onBack={lessonHistory.length > 0 ? handleBackNavigation : undefined}
+            nextLessonPath={getNextLesson(selectedLesson.path)}
           />
         ) : (
           <div className="welcome-screen">

@@ -3,14 +3,17 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Lesson } from '../types';
 
 interface LessonViewerProps {
   lesson: Lesson;
   onNavigateToLesson?: (lessonPath: string) => void;
+  onBack?: () => void;
+  nextLessonPath?: string | null;
 }
 
-const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson }) => {
+const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
   // Process Obsidian-style internal links [[Link Name]] and images
   const processObsidianLinks = (content: string) => {
     // Process internal links [[Link Name]]
@@ -199,6 +202,33 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson 
         >
           {processedContent}
         </ReactMarkdown>
+      </div>
+
+      {/* Navigation Panel */}
+      <div className="lesson-navigation">
+        {onBack && (
+          <button 
+            className="nav-button back-button"
+            onClick={onBack}
+            title="Вернуться к предыдущему уроку"
+          >
+            <ArrowLeft size={18} />
+            Назад
+          </button>
+        )}
+        
+        <div className="nav-spacer"></div>
+        
+        {nextLessonPath && onNavigateToLesson && (
+          <button 
+            className="nav-button next-button"
+            onClick={() => onNavigateToLesson(nextLessonPath)}
+            title="Перейти к следующему уроку"
+          >
+            Следующий урок
+            <ArrowRight size={18} />
+          </button>
+        )}
       </div>
     </div>
   );
