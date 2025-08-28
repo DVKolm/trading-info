@@ -52,6 +52,27 @@ const App: React.FC = () => {
     checkSubscriptionStatus();
   }, []);
 
+  // Scroll to top when lesson changes
+  useEffect(() => {
+    if (selectedLesson) {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        const lessonViewer = document.querySelector('.lesson-viewer');
+        const mainContent = document.querySelector('.main-content');
+        
+        if (lessonViewer) {
+          lessonViewer.scrollTop = 0;
+        }
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+        
+        // Also scroll the window
+        window.scrollTo(0, 0);
+      }, 100);
+    }
+  }, [selectedLesson]);
+
   const checkSubscriptionStatus = async () => {
     try {
       setCheckingSubscription(true);
@@ -139,15 +160,6 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setSidebarOpen(false); // Close sidebar on mobile after selection
-      
-      // Scroll to top when new lesson loads
-      setTimeout(() => {
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-          mainContent.scrollTop = 0;
-        }
-        window.scrollTo({ top: 0, behavior: 'auto' });
-      }, 50);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
@@ -188,15 +200,6 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setLessonHistory(newHistory);
-      
-      // Scroll to top when returning to previous lesson
-      setTimeout(() => {
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-          mainContent.scrollTop = 0;
-        }
-        window.scrollTo({ top: 0, behavior: 'auto' });
-      }, 50);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load previous lesson');
     }
