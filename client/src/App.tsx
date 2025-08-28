@@ -358,7 +358,25 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
     }
   };
 
-  const updateLastReadLesson = (path: string, title: string, scrollPosition: number) => {
+  const extractTitleFromContent = (content: string, fallbackTitle?: string): string => {
+    // Try to extract title from content
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Look for H1 or H2 headers
+      if (trimmed.startsWith('# ') || trimmed.startsWith('## ')) {
+        return trimmed.replace(/^#+\s*/, '').trim();
+      }
+    }
+    return fallbackTitle || 'Урок';
+  };
+
+  const updateLastReadLesson = (path: string, lesson: Lesson, scrollPosition: number) => {
+    const title = lesson.frontmatter?.title || 
+                 extractTitleFromContent(lesson.content) ||
+                 path.split('/').pop()?.replace('.md', '') || 
+                 'Урок';
+    
     const lastRead = {
       path,
       title,
