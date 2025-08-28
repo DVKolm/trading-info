@@ -480,13 +480,8 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
             {showContinueReading && lastReadLesson && (
               <div className="global-continue-reading">
                 <div className="continue-reading-card">
-                  <div className="continue-reading-icon">📖</div>
                   <div className="continue-reading-info">
-                    <h3>Продолжить чтение?</h3>
-                    <p className="lesson-title">{lastReadLesson.title}</p>
-                    <p className="last-read-time">
-                      Последний раз читали {new Date(lastReadLesson.timestamp).toLocaleDateString('ru-RU')}
-                    </p>
+                    <span className="lesson-title">{lastReadLesson.title}</span>
                   </div>
                   <div className="continue-reading-actions">
                     <button 
