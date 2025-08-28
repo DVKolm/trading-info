@@ -3,6 +3,7 @@ import { WebApp } from '@twa-dev/types';
 import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
 import SubscriptionCheck from './components/SubscriptionCheck';
+import WaterBackground from './components/WaterBackground';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
 
@@ -275,15 +276,18 @@ const App: React.FC = () => {
           />
         ) : (
           <div className="welcome-screen">
-            <h1>Добро пожаловать в H.E.A.R.T!</h1>
-            <p>Ваш надежный проводник в мире трейдинга</p>
-            
-            <button 
-              className="open-sidebar-btn"
-              onClick={() => setSidebarOpen(true)}
-            >
-              Открыть уроки
-            </button>
+            <WaterBackground />
+            <div className="welcome-content">
+              <h1>Добро пожаловать в H.E.A.R.T!</h1>
+              <p>Ваш надежный проводник в мире трейдинга</p>
+              
+              <button 
+                className="open-sidebar-btn"
+                onClick={() => setSidebarOpen(true)}
+              >
+                Открыть уроки
+              </button>
+            </div>
           </div>
         )}
       </main>
