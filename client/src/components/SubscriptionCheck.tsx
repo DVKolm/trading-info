@@ -4,9 +4,10 @@ import './SubscriptionCheck.css';
 
 interface SubscriptionCheckProps {
   onSubscriptionVerified: () => void;
+  onBack?: () => void;
 }
 
-const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVerified }) => {
+const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVerified, onBack }) => {
   const [isChecking, setIsChecking] = useState(false);
   const [step, setStep] = useState<'initial' | 'redirected' | 'verified'>('initial');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -196,10 +197,7 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
                     Проверяем подписку...
                   </>
                 ) : (
-                  <>
-                    <CheckCircle size={20} />
-                    Я подписался
-                  </>
+                  'Я подписался'
                 )}
               </button>
               
@@ -220,6 +218,27 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
             обновления курсов и полезные советы по трейдингу.
           </p>
         </div>
+
+        {onBack && (
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <button 
+              className="back-button"
+              onClick={onBack}
+              style={{
+                background: 'transparent',
+                color: 'rgba(255, 255, 255, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              ← Вернуться к урокам
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

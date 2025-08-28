@@ -199,8 +199,12 @@ const App: React.FC = () => {
     }
   };
 
-  // Function to get next lesson based on lesson structure
+  // Function to get next lesson based on lesson structure - stay within the same tier
   const getNextLesson = (currentPath: string): string | null => {
+    // Determine which tier the current lesson belongs to
+    const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
+    const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
+    
     const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
       const result: LessonStructure[] = [];
       structure.forEach(item => {
@@ -215,22 +219,33 @@ const App: React.FC = () => {
     };
 
     const allLessons = flattenStructure(lessonStructure);
-    // Filter main lessons - those that have the lesson number in their path and filename matches pattern
-    const mainLessons = allLessons.filter(lesson => {
+    
+    // Filter lessons from the same tier only
+    const sameTierLessons = allLessons.filter(lesson => {
       // Check if this is a main lesson file (path contains "Урок X" and filename starts with "Урок X")
       const pathMatch = lesson.path.match(/Урок (\d+)/);
       const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
-      // Must be in main lesson folder AND be the main lesson file (not additional materials)
-      return pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+      const isMainLesson = pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+      
+      if (!isMainLesson) return false;
+      
+      // Filter by tier
+      if (isFreeTier) {
+        return lesson.path.includes('Начальный уровень') || lesson.path.includes('📚');
+      } else if (isPremiumTier) {
+        return lesson.path.includes('Средний уровень') || lesson.path.includes('🎓');
+      }
+      
+      return false;
     }).sort((a, b) => {
       const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
       const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
       return aNum - bNum;
     });
 
-    const currentIndex = mainLessons.findIndex(lesson => lesson.path === currentPath);
-    if (currentIndex >= 0 && currentIndex < mainLessons.length - 1) {
-      return mainLessons[currentIndex + 1].path;
+    const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
+    if (currentIndex >= 0 && currentIndex < sameTierLessons.length - 1) {
+      return sameTierLessons[currentIndex + 1].path;
     }
     
     return null;
@@ -248,10 +263,13 @@ const App: React.FC = () => {
     const isSubscriptionError = error.includes('подписка') || error.includes('Telegram');
     
     if (isSubscriptionError) {
-      return <SubscriptionCheck onSubscriptionVerified={() => {
-        setError(null);
-        handleSubscriptionVerified();
-      }} />;
+      return <SubscriptionCheck 
+        onSubscriptionVerified={() => {
+          setError(null);
+          handleSubscriptionVerified();
+        }}
+        onBack={() => setError(null)}
+      />;
     }
     
     return (
