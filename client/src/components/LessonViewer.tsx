@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -12,6 +12,120 @@ interface LessonViewerProps {
   onBack?: () => void;
   nextLessonPath?: string | null;
 }
+
+// Lazy loading image component
+interface LazyImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [inView, setInView] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px 0px' // Start loading 50px before image comes into view
+      }
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleLoad = () => {
+    setLoaded(true);
+  };
+
+  const handleError = () => {
+    setError(true);
+    setLoaded(true);
+  };
+
+  return (
+    <div
+      ref={imgRef}
+      className={`lazy-image-container ${className || ''}`}
+      style={{
+        ...style,
+        minHeight: '200px',
+        backgroundColor: '#f0f0f0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {!inView && (
+        <div style={{
+          color: '#666',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          📷 Изображение загрузится при прокрутке
+        </div>
+      )}
+      
+      {inView && !loaded && !error && (
+        <div style={{
+          color: '#666',
+          fontSize: '14px',
+          textAlign: 'center',
+          position: 'absolute',
+          zIndex: 1
+        }}>
+          ⏳ Загрузка изображения...
+        </div>
+      )}
+
+      {inView && (
+        <img
+          src={src}
+          alt={alt}
+          onLoad={handleLoad}
+          onError={handleError}
+          style={{
+            ...style,
+            maxWidth: '100%',
+            height: 'auto',
+            borderRadius: '8px',
+            margin: '1rem 0',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out',
+            position: loaded ? 'static' : 'absolute'
+          }}
+        />
+      )}
+
+      {error && (
+        <div style={{
+          color: '#ff6b6b',
+          fontSize: '14px',
+          textAlign: 'center',
+          padding: '20px'
+        }}>
+          ❌ Не удалось загрузить изображение: {alt}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
   // Process Obsidian-style internal links [[Link Name]] and images
@@ -202,12 +316,11 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
             },
             img({ src, alt, ...props }) {
               return (
-                <img 
-                  src={src} 
+                <LazyImage
+                  src={src || ''}
                   alt={alt || ''}
                   className="lesson-image"
                   style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', margin: '1rem 0' }}
-                  {...props} 
                 />
               );
             },
