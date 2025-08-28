@@ -200,11 +200,16 @@ const App: React.FC = () => {
     };
 
     const allLessons = flattenStructure(lessonStructure);
-    const mainLessons = allLessons.filter(lesson => 
-      lesson.name.startsWith('Урок ') && lesson.name.includes('.md')
-    ).sort((a, b) => {
-      const aNum = parseInt(a.name.match(/Урок (\d+)/)?.[1] || '0');
-      const bNum = parseInt(b.name.match(/Урок (\d+)/)?.[1] || '0');
+    // Filter main lessons - those that have the lesson number in their path and filename matches pattern
+    const mainLessons = allLessons.filter(lesson => {
+      // Check if this is a main lesson file (path contains "Урок X" and filename starts with "Урок X")
+      const pathMatch = lesson.path.match(/Урок (\d+)/);
+      const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
+      // Must be in main lesson folder AND be the main lesson file (not additional materials)
+      return pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+    }).sort((a, b) => {
+      const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
+      const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
       return aNum - bNum;
     });
 
