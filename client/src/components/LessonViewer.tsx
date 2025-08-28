@@ -16,23 +16,31 @@ interface LessonViewerProps {
 const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
   // Process Obsidian-style internal links [[Link Name]] and images
   const processObsidianLinks = (content: string) => {
-    // Process internal links [[Link Name]]
-    let processedContent = content.replace(/\[\[([^\]]+)\]\]/g, (match, linkText) => {
+    // First, process image links ![[Image.png]] format
+    let processedContent = content.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
+      const cleanLinkText = linkText.trim();
+      
+      // This is definitely an image since it uses ![[]] syntax
+      if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
+        const filename = cleanLinkText.replace(/\s+/g, '');
+        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+        const encodedFilename = btoa(filename);
+        
+        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
+      }
+      
+      // If it's not an image, treat as regular link
+      return `[${cleanLinkText}](#internal-link-${encodeURIComponent(cleanLinkText)})`;
+    });
+    
+    // Then, process regular internal links [[Link Name]]
+    processedContent = processedContent.replace(/\[\[([^\]]+)\]\]/g, (match, linkText) => {
       const cleanLinkText = linkText.trim();
       
       // Check if it's an image (has image extension)
       if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-        // Clean filename by removing spaces to match our file naming convention
-        // Extract lesson directory name from lesson path (only the last part, not full path)
-        const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '').replace(/^.*\//, '');
-        
-        // Use the first variant (remove spaces) as it matches our file naming convention
-        const filename = cleanLinkText.replace(/\s+/g, ''); // "Pastedimage20250826123046.png"
+        const filename = cleanLinkText.replace(/\s+/g, '');
         const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-        
-        // Use shorter URL format: /api/lesson-image with POST
-        // Since markdown can't do POST requests, we'll need to use a custom component approach
-        // For now, let's try with a simpler GET approach using filename only
         const encodedFilename = btoa(filename);
         
         return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
