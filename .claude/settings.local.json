@@ -11,7 +11,8 @@
       "WebFetch(domain:localhost)",
       "Bash(node:*)",
       "Bash(git checkout:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(move:*)"
     ],
     "deny": [],
     "ask": []

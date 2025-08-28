@@ -48,7 +48,8 @@ const App: React.FC = () => {
       tg.setBackgroundColor('#1e1e1e');
     }
 
-    // Check subscription status first
+    // Always load lesson structure first, then check subscription
+    fetchLessonStructure();
     checkSubscriptionStatus();
   }, []);
 
@@ -94,7 +95,6 @@ const App: React.FC = () => {
             if (data.subscribed) {
               // Подписка подтверждена через API
               setIsSubscribed(true);
-              await fetchLessonStructure();
               return;
             } else {
               // Подписка больше не активна, удаляем из localStorage
@@ -108,13 +108,11 @@ const App: React.FC = () => {
           console.error('Error checking subscription via API:', apiError);
           // Если API недоступен, доверяем localStorage
           setIsSubscribed(true);
-          await fetchLessonStructure();
           return;
         }
       } else if (savedSubscription === 'true' && !telegramUserId) {
         // Нет ID пользователя, но есть сохраненная подписка (может быть тестирование)
         setIsSubscribed(true);
-        await fetchLessonStructure();
         return;
       }
 
@@ -242,33 +240,35 @@ const App: React.FC = () => {
     return null;
   };
 
-  if (checkingSubscription) {
+  if (checkingSubscription || loading) {
     return (
       <div className="loading-container">
-        <div className="loading-spinner">Checking subscription...</div>
-      </div>
-    );
-  }
-
-  if (!isSubscribed) {
-    return <SubscriptionCheck onSubscriptionVerified={handleSubscriptionVerified} />;
-  }
-
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner">Loading lessons...</div>
+        <div className="loading-spinner">
+          {checkingSubscription ? 'Checking subscription...' : 'Loading lessons...'}
+        </div>
       </div>
     );
   }
 
   if (error) {
+    const isSubscriptionError = error.includes('подписка') || error.includes('Telegram');
+    
+    if (isSubscriptionError) {
+      return <SubscriptionCheck onSubscriptionVerified={() => {
+        setError(null);
+        handleSubscriptionVerified();
+      }} />;
+    }
+    
     return (
       <div className="error-container">
         <div className="error-message">
           <h2>Error</h2>
           <p>{error}</p>
-          <button onClick={fetchLessonStructure} className="retry-button">
+          <button onClick={() => {
+            setError(null);
+            fetchLessonStructure();
+          }} className="retry-button">
             Retry
           </button>
         </div>
@@ -284,6 +284,8 @@ const App: React.FC = () => {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onLessonSelect={handleLessonSelect}
         onSearch={handleSearch}
+        isSubscribed={isSubscribed}
+        onSubscriptionRequired={() => setError('Для доступа к этому уроку требуется подписка на наш Telegram канал')}
       />
       
       <main className={`main-content ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -303,7 +305,7 @@ const App: React.FC = () => {
               className="open-sidebar-btn"
               onClick={() => setSidebarOpen(true)}
             >
-              Открыть уроки
+              Начать обучение
             </button>
           </div>
         )}

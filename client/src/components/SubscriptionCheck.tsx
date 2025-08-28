@@ -12,7 +12,7 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const TELEGRAM_CHANNEL_URL = 'https://t.me/DailyTradiBlog';
-  const TELEGRAM_CHANNEL_USERNAME = '@DailyTradiBlog';
+  const TELEGRAM_CHANNEL_USERNAME = '@H.E.A.R.T.';
 
   useEffect(() => {
     // Проверяем, есть ли сохраненная подписка в localStorage

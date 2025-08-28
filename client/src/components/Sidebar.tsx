@@ -8,6 +8,8 @@ interface SidebarProps {
   onToggle: () => void;
   onLessonSelect: (lessonPath: string) => void;
   onSearch: (query: string) => Promise<SearchResult[]>;
+  isSubscribed: boolean;
+  onSubscriptionRequired: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -15,7 +17,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggle,
   onLessonSelect,
-  onSearch
+  onSearch,
+  isSubscribed,
+  onSubscriptionRequired
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,12 +84,23 @@ const Sidebar: React.FC<SidebarProps> = ({
       );
     }
 
+    const handleLessonClick = () => {
+      const isPremiumLesson = item.path.includes('Средний уровень (Подписка)') || item.path.includes('🎓');
+      
+      if (isPremiumLesson && !isSubscribed) {
+        onSubscriptionRequired();
+        return;
+      }
+      
+      onLessonSelect(item.path);
+    };
+
     return (
       <div
         key={item.id}
         className="lesson-item"
         style={{ paddingLeft }}
-        onClick={() => onLessonSelect(item.path)}
+        onClick={handleLessonClick}
       >
         <File size={16} />
         <span className="lesson-name">{item.name}</span>
@@ -108,6 +123,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         className={`search-result ${result.type}`}
         onClick={() => {
           if (result.type === 'lesson') {
+            const isPremiumLesson = result.path.includes('Средний уровень (Подписка)') || result.path.includes('🎓');
+            
+            if (isPremiumLesson && !isSubscribed) {
+              onSubscriptionRequired();
+              return;
+            }
+            
             onLessonSelect(result.path);
             setSearchQuery('');
             setSearchResults([]);
