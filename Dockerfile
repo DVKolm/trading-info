@@ -1,15 +1,16 @@
 # Multi-stage build для оптимизации размера образа
 
 # Stage 1: Build frontend
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/client
 
 # Копируем package files для кэширования зависимостей
 COPY client/package*.json ./
 
-# Устанавливаем зависимости
-RUN npm ci --only=production
+# Устанавливаем ВСЕ зависимости (включая devDependencies для react-scripts)
+RUN npm config set timeout 120000
+RUN npm ci
 
 # Копируем исходный код фронтенда
 COPY client/ .
@@ -29,7 +30,7 @@ WORKDIR /app
 # Копируем package files для бэкенда
 COPY package*.json ./
 
-# Устанавливаем только production зависимости
+# Устанавливаем только production зависимости для бэкенда
 RUN npm ci --only=production && npm cache clean --force
 
 # Копируем исходный код сервера
@@ -37,7 +38,7 @@ COPY server.js ./
 COPY lessons/ ./lessons/
 
 # Копируем собранный фронтенд из предыдущего stage
-COPY --from=frontend-builder /app/build ./client/build
+COPY --from=frontend-builder /app/client/build ./client/build
 
 # Меняем владельца файлов
 RUN chown -R nextjs:nodejs /app
