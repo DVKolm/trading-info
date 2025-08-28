@@ -35,6 +35,7 @@ const App: React.FC = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<string[]>([]);
+  const [scrollPositions, setScrollPositions] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -53,25 +54,56 @@ const App: React.FC = () => {
     checkSubscriptionStatus();
   }, []);
 
-  // Scroll to top when lesson changes
+  // Set up scroll tracking when lesson changes
   useEffect(() => {
-    if (selectedLesson) {
-      // Use setTimeout to ensure DOM has updated
-      setTimeout(() => {
+    if (!selectedLesson) return;
+
+    let scrollSaveTimer: NodeJS.Timeout;
+    
+    const handleScroll = () => {
+      // Debounce scroll position saving
+      clearTimeout(scrollSaveTimer);
+      scrollSaveTimer = setTimeout(() => {
         const lessonViewer = document.querySelector('.lesson-viewer');
         const mainContent = document.querySelector('.main-content');
+        const scrollTop = lessonViewer?.scrollTop || mainContent?.scrollTop || window.pageYOffset;
         
-        if (lessonViewer) {
-          lessonViewer.scrollTop = 0;
+        if (scrollTop > 100) { // Only save if scrolled significantly
+          setScrollPositions(prev => {
+            const newPositions = new Map(prev);
+            newPositions.set(selectedLesson.path, scrollTop);
+            
+            // Save to localStorage
+            const positionsObj = Object.fromEntries(newPositions);
+            localStorage.setItem('lesson_scroll_positions', JSON.stringify(positionsObj));
+            
+            return newPositions;
+          });
         }
-        if (mainContent) {
-          mainContent.scrollTop = 0;
-        }
-        
-        // Also scroll the window
-        window.scrollTo(0, 0);
-      }, 100);
+      }, 1000); // Save every second after scroll stops
+    };
+
+    const lessonViewer = document.querySelector('.lesson-viewer');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (lessonViewer) {
+      lessonViewer.addEventListener('scroll', handleScroll);
+    } else if (mainContent) {
+      mainContent.addEventListener('scroll', handleScroll);
+    } else {
+      window.addEventListener('scroll', handleScroll);
     }
+
+    return () => {
+      clearTimeout(scrollSaveTimer);
+      if (lessonViewer) {
+        lessonViewer.removeEventListener('scroll', handleScroll);
+      } else if (mainContent) {
+        mainContent.removeEventListener('scroll', handleScroll);
+      } else {
+        window.removeEventListener('scroll', handleScroll);
+      }
+    };
   }, [selectedLesson]);
 
   const checkSubscriptionStatus = async () => {
@@ -139,10 +171,49 @@ const App: React.FC = () => {
     }
   };
 
+  const saveScrollPosition = (lessonPath: string) => {
+    const lessonViewer = document.querySelector('.lesson-viewer');
+    const mainContent = document.querySelector('.main-content');
+    
+    const scrollTop = lessonViewer?.scrollTop || mainContent?.scrollTop || window.pageYOffset;
+    
+    setScrollPositions(prev => {
+      const newPositions = new Map(prev);
+      newPositions.set(lessonPath, scrollTop);
+      
+      // Save to localStorage
+      const positionsObj = Object.fromEntries(newPositions);
+      localStorage.setItem('lesson_scroll_positions', JSON.stringify(positionsObj));
+      
+      return newPositions;
+    });
+  };
+
+  const restoreScrollPosition = (lessonPath: string) => {
+    // Load from localStorage first
+    const savedPositions = localStorage.getItem('lesson_scroll_positions');
+    let currentPositions = scrollPositions;
+    
+    if (savedPositions) {
+      try {
+        const positionsObj = JSON.parse(savedPositions);
+        currentPositions = new Map(Object.entries(positionsObj).map(([k, v]) => [k, Number(v)]));
+        setScrollPositions(currentPositions);
+      } catch (error) {
+        console.error('Error loading scroll positions from localStorage:', error);
+      }
+    }
+
+    const savedPosition = currentPositions.get(lessonPath);
+    // Don't restore position automatically - let the LessonViewer component handle it
+    // This prevents conflicts with the "Continue Reading" panel
+  };
+
   const handleLessonSelect = async (lessonPath: string) => {
     try {
-      // Add current lesson to history if we have one selected
+      // Save scroll position of current lesson before switching
       if (selectedLesson && selectedLesson.path !== lessonPath) {
+        saveScrollPosition(selectedLesson.path);
         setLessonHistory(prev => [...prev, selectedLesson.path]);
       }
       
@@ -154,6 +225,9 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setSidebarOpen(false); // Close sidebar on mobile after selection
+      
+      // Restore scroll position for this lesson
+      restoreScrollPosition(lessonPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
@@ -182,6 +256,11 @@ const App: React.FC = () => {
   const handleBackNavigation = async () => {
     if (lessonHistory.length === 0) return;
     
+    // Save current scroll position
+    if (selectedLesson) {
+      saveScrollPosition(selectedLesson.path);
+    }
+    
     const previousLessonPath = lessonHistory[lessonHistory.length - 1];
     const newHistory = lessonHistory.slice(0, -1);
     
@@ -194,6 +273,9 @@ const App: React.FC = () => {
       const lessonData = await response.json();
       setSelectedLesson(lessonData);
       setLessonHistory(newHistory);
+      
+      // Restore scroll position for previous lesson
+      restoreScrollPosition(previousLessonPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load previous lesson');
     }
