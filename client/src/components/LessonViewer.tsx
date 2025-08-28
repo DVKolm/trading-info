@@ -25,9 +25,20 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
         // Convert filename by removing spaces (Obsidian adds spaces but actual files don't have them)
         const actualFilename = cleanLinkText.replace(/\s+/g, '');
         // Extract lesson directory name from lesson path
-        const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '').replace(/^.*\//, '');
+        const lessonDir = lesson.path.replace(/\/[^/]+\.md$/, '');
         // Create base64 encoded path to avoid URL encoding issues with Cyrillic
         const imagePath = `${lessonDir}/${actualFilename}`;
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Image processing:', {
+            originalText: cleanLinkText,
+            actualFilename: actualFilename,
+            lessonPath: lesson.path,
+            lessonDir: lessonDir,
+            imagePath: imagePath
+          });
+        }
+        
         const encodedPath = btoa(unescape(encodeURIComponent(imagePath)));
         const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
         return `![${cleanLinkText}](${apiUrl}/api/image/${encodedPath})`;

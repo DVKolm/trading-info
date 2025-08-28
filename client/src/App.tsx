@@ -3,7 +3,6 @@ import { WebApp } from '@twa-dev/types';
 import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
 import SubscriptionCheck from './components/SubscriptionCheck';
-import WaterBackground from './components/WaterBackground';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
 
@@ -143,8 +142,12 @@ const App: React.FC = () => {
       
       // Scroll to top when new lesson loads
       setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }, 50);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
@@ -188,8 +191,12 @@ const App: React.FC = () => {
       
       // Scroll to top when returning to previous lesson
       setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }, 50);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load previous lesson');
     }
@@ -286,18 +293,15 @@ const App: React.FC = () => {
           />
         ) : (
           <div className="welcome-screen">
-            <WaterBackground />
-            <div className="welcome-content">
-              <h1>Добро пожаловать в H.E.A.R.T!</h1>
-              <p>Ваш надежный проводник в мире трейдинга</p>
-              
-              <button 
-                className="open-sidebar-btn"
-                onClick={() => setSidebarOpen(true)}
-              >
-                Открыть уроки
-              </button>
-            </div>
+            <h1>Добро пожаловать в H.E.A.R.T!</h1>
+            <p>Ваш надежный проводник в мире трейдинга</p>
+            
+            <button 
+              className="open-sidebar-btn"
+              onClick={() => setSidebarOpen(true)}
+            >
+              Открыть уроки
+            </button>
           </div>
         )}
       </main>
