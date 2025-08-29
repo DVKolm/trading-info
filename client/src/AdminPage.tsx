@@ -81,7 +81,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         }
 
         try {
-            const response = await fetch('/api/upload-lesson', {
+            const apiUrl = process.env.REACT_APP_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/upload-lesson`, {
                 method: 'POST',
                 body: formData,
             });
@@ -125,7 +126,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         setMessage('');
 
         try {
-            const response = await fetch('/api/delete-lesson', {
+            const apiUrl = process.env.REACT_APP_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/delete-lesson`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
