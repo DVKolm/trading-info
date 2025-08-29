@@ -358,16 +358,18 @@ app.get('/api/image/:encodedPath', async (req, res) => {
     const lessonsDir = path.join(__dirname, 'lessons');
     
     const searchRecursively = async (dir) => {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
+      const entries = await fs.readdir(dir, { withFileTypes: true, encoding: 'utf8' });
       
       for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
+        // Ensure proper UTF-8 handling for Russian text
+        const safeName = Buffer.from(entry.name, 'utf8').toString('utf8');
+        const fullPath = path.join(dir, safeName);
         
         if (entry.isDirectory()) {
           // Search in subdirectory
           const result = await searchRecursively(fullPath);
           if (result) return result;
-        } else if (entry.name === filename) {
+        } else if (safeName === filename) {
           // Found the file
           return fullPath;
         }
@@ -406,19 +408,21 @@ let lessonMap = new Map();
 // Function to build lesson name to path mapping
 async function buildLessonMap(dirPath, relativePath = '') {
   try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dirPath, { withFileTypes: true, encoding: 'utf8' });
     
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name);
-      const itemRelativePath = path.join(relativePath, entry.name);
+      // Ensure proper UTF-8 handling for Russian text
+      const safeName = Buffer.from(entry.name, 'utf8').toString('utf8');
+      const fullPath = path.join(dirPath, safeName);
+      const itemRelativePath = path.join(relativePath, safeName);
       
       if (entry.isDirectory()) {
         await buildLessonMap(fullPath, itemRelativePath);
-      } else if (entry.name.endsWith('.md')) {
+      } else if (safeName.endsWith('.md')) {
         const content = await fs.readFile(fullPath, 'utf8');
         const parsed = matter(content);
         
-        let title = parsed.data.title || entry.name.replace('.md', '');
+        let title = parsed.data.title || safeName.replace('.md', '');
         const firstHeading = content.match(/^#\s+(.+)$/m);
         if (firstHeading) {
           title = firstHeading[1];
@@ -426,7 +430,7 @@ async function buildLessonMap(dirPath, relativePath = '') {
         
         // Store both the title and filename as possible keys
         lessonMap.set(title, itemRelativePath.replace(/\\/g, '/'));
-        lessonMap.set(entry.name.replace('.md', ''), itemRelativePath.replace(/\\/g, '/'));
+        lessonMap.set(safeName.replace('.md', ''), itemRelativePath.replace(/\\/g, '/'));
         
         // Also store the directory name if it matches a lesson pattern
         const dirName = path.basename(path.dirname(fullPath));
@@ -446,20 +450,22 @@ async function getLessons() {
   
   async function scanRecursively(dirPath, relativePath = '') {
     try {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      const entries = await fs.readdir(dirPath, { withFileTypes: true, encoding: 'utf8' });
       
       for (const entry of entries) {
-        const fullPath = path.join(dirPath, entry.name);
-        const itemRelativePath = path.join(relativePath, entry.name);
+        // Ensure proper UTF-8 handling for Russian text
+        const safeName = Buffer.from(entry.name, 'utf8').toString('utf8');
+        const fullPath = path.join(dirPath, safeName);
+        const itemRelativePath = path.join(relativePath, safeName);
         
         if (entry.isDirectory()) {
           await scanRecursively(fullPath, itemRelativePath);
-        } else if (entry.name.endsWith('.md')) {
+        } else if (safeName.endsWith('.md')) {
           try {
             const content = await fs.readFile(fullPath, 'utf8');
             const parsed = matter(content);
             
-            let title = parsed.data.title || entry.name.replace('.md', '');
+            let title = parsed.data.title || safeName.replace('.md', '');
             const firstHeading = content.match(/^#\s+(.+)$/m);
             if (firstHeading) {
               title = firstHeading[1];
@@ -469,7 +475,7 @@ async function getLessons() {
               title,
               fullPath,
               relativePath: itemRelativePath.replace(/\\/g, '/'),
-              filename: entry.name
+              filename: safeName
             });
           } catch (error) {
             console.warn(`Could not read file ${fullPath}:`, error.message);
