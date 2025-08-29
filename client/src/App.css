@@ -283,6 +283,10 @@ code {
   transform: scale(1.1);
 }
 
+.fab-action:last-child {
+  margin-bottom: 0;
+}
+
 .search-input-wrapper svg {
   color: var(--text-muted);
   flex-shrink: 0;
@@ -944,7 +948,6 @@ code {
 .engagement-bars {
   display: flex;
   flex-direction: column;
-    gap: 0.5rem;
 }
 
 .engagement-bar {
@@ -1536,6 +1539,7 @@ code {
   color: var(--text-primary);
   margin-bottom: 1rem;
   line-height: 1.7;
+  margin-bottom: 0.5rem;
 }
 
 .lesson-strong {
