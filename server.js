@@ -5,6 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { marked } = require('marked');
 const matter = require('gray-matter');
+const multer = require("multer");
 
 // Configure marked to suppress deprecated warnings
 marked.setOptions({
@@ -17,6 +18,33 @@ const PORT = process.env.PORT || 3001;
 
 // Production environment check
 const isProduction = process.env.NODE_ENV === 'production';
+
+const authorizedUserIds = ['781182099', '5974666109'];
+
+async function isValidTelegramData(initData) {
+    const encoded = decodeURIComponent(initData);
+    const data = new URLSearchParams(encoded);
+    const hash = data.get('hash');
+    data.delete('hash');
+
+    const dataCheckArr = [];
+    for (const [key, value] of data.entries()) {
+        dataCheckArr.push(`${key}=${value}`);
+    }
+    dataCheckArr.sort();
+    const dataCheckString = dataCheckArr.join('\n');
+
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN);
+    const calculatedHash = crypto.createHmac('sha256', secretKey.digest()).update(dataCheckString).digest('hex');
+
+    if (calculatedHash !== hash) {
+        return { isValid: false, user: null };
+    }
+
+    const user = JSON.parse(data.get('user'));
+
+    return { isValid: true, user };
+}
 
 app.use(cors());
 app.use(express.json());
@@ -47,6 +75,91 @@ app.post('/api/lesson-image', express.json(), async (req, res) => {
     console.error('Error serving lesson image:', error);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
+    const { initData } = req.body;
+    if (!initData) {
+        return res.status(401).json({ error: 'Unauthorized: No initData provided' });
+    }
+
+    const { isValid, user } = await isValidTelegramData(initData);
+
+    if (!isValid || !authorizedUserIds.includes(String(user.id))) {
+        return res.status(403).json({ error: 'Forbidden: Invalid user' });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded.' });
+    }
+
+    const originalName = req.file.originalname;
+    const fileBuffer = req.file.buffer;
+
+    try {
+        if (path.extname(originalName) === '.zip') {
+            const zip = new AdmZip(fileBuffer);
+            const zipEntries = zip.getEntries();
+            const mdFileEntry = zipEntries.find(entry => entry.entryName.endsWith('.md'));
+
+            if (!mdFileEntry) {
+                return res.status(400).json({ error: 'ZIP archive must contain one .md file.' });
+            }
+
+            const lessonName = path.basename(mdFileEntry.entryName, '.md');
+
+            // Heuristic to find category folder
+            const lessonFiles = await getLessons();
+            let lessonDir = '';
+
+            const sampleLesson = lessonFiles.find(l => l.title.includes(lessonName.split('.')[0]));
+
+            if (sampleLesson) {
+                lessonDir = path.dirname(sampleLesson.fullPath);
+            } else {
+                // Default to a new category if no match found
+                const newCategory = "Новая категория";
+                lessonDir = path.join('lessons', newCategory, lessonName);
+            }
+
+            // Extract to the determined directory
+            zip.extractAllTo(lessonDir, true);
+
+        } else if (path.extname(originalName) === '.md') {
+            const lessonName = path.basename(originalName, '.md');
+
+            // Heuristic to find category folder
+            const lessonFiles = await getLessons();
+            let lessonDir = '';
+
+            const sampleLesson = lessonFiles.find(l => l.title.includes(lessonName.split('.')[0]));
+            if (sampleLesson) {
+                lessonDir = path.dirname(sampleLesson.fullPath);
+            } else {
+                 // Default to a new category if no match found
+                const newCategory = "Новая категория";
+                lessonDir = path.join('lessons', newCategory, lessonName);
+                await fs.ensureDir(lessonDir);
+            }
+
+            await fs.writeFile(path.join(lessonDir, originalName), fileBuffer);
+        } else {
+            return res.status(400).json({ error: 'Unsupported file type. Please upload a .md or .zip file.' });
+        }
+
+        res.status(200).json({ message: 'Lesson uploaded successfully.' });
+    } catch (error) {
+        console.error('Error uploading lesson:', error);
+        res.status(500).json({ error: 'Failed to upload lesson.' });
+    }
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname+'/client/build/index.html'));
 });
 
 // GET route for images - search by filename in all lesson directories  

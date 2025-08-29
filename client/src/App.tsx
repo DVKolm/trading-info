@@ -2,12 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { WebApp } from '@twa-dev/types';
 import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
-import ThemeToggle from './components/ThemeToggle';
+import FloatingActionButton from './components/FloatingActionButton';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
 
-// Lazy load только SubscriptionCheck, так как он нужен редко
+// Lazy load non-essential components
 const SubscriptionCheck = lazy(() => import('./components/SubscriptionCheck'));
+const AdminPage = lazy(() => import('./AdminPage'));
+const UserProfile = lazy(() => import('./components/UserProfile'));
 
 declare global {
   interface Window {
@@ -70,6 +72,46 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [welcomePageReady, setWelcomePageReady] = useState(false);
   const [welcomeAnimationsEnabled, setWelcomeAnimationsEnabled] = useState(false);
+  const [showAdminPage, setShowAdminPage] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+
+  const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  const authorizedUserIds = ['781182099', '5974666109'];
+  const isAdmin = telegramUserId && authorizedUserIds.includes(String(telegramUserId));
+
+  const extractTitleFromContent = (content: string, fallbackTitle?: string): string => {
+    // Try to extract title from content
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Look for H1 or H2 headers
+      if (trimmed.startsWith('# ') || trimmed.startsWith('## ')) {
+        return trimmed.replace(/^#+\s*/, '').trim();
+      }
+    }
+    return fallbackTitle || 'Урок';
+  };
+
+  const updateLastReadLesson = useCallback((path: string, lesson: Lesson, scrollPosition: number) => {
+    const title = lesson.frontmatter?.title || 
+                 extractTitleFromContent(lesson.content) ||
+                 path.split('/').pop()?.replace('.md', '') || 
+                 'Урок';
+    
+    const lastRead = {
+      path,
+      title,
+      timestamp: Date.now(),
+      scrollPosition
+    };
+    
+    try {
+      batchedLocalStorageSet('last_read_lesson', lastRead);
+      setLastReadLesson(lastRead);
+    } catch (error) {
+      console.error('Error saving last read lesson:', error);
+    }
+  }, []);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -120,7 +162,7 @@ const App: React.FC = () => {
         isThrottled = false;
       }, 250); // Throttle to every 250ms instead of debouncing
     };
-  }, []);
+  }, [updateLastReadLesson]);
 
   // Set up scroll tracking when lesson changes
   useEffect(() => {
@@ -287,7 +329,6 @@ const App: React.FC = () => {
       }
     }
 
-    const savedPosition = currentPositions.get(lessonPath);
     // Don't restore position automatically - let the global continue reading handle it
   };
 
@@ -407,7 +448,7 @@ const App: React.FC = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
-  }, [selectedLesson?.path]);
+  }, [selectedLesson?.path, updateLastReadLesson]);
 
   const handleSearch = useCallback(async (query: string): Promise<any[]> => {
     try {
@@ -516,7 +557,7 @@ const App: React.FC = () => {
   // Memoize next lesson path
   const nextLessonPath = useMemo(() => {
     return selectedLesson ? getNextLesson(selectedLesson.path) : null;
-  }, [selectedLesson?.path, getNextLesson]);
+  }, [selectedLesson, getNextLesson]);
 
   // Preload next lesson for better UX
   useEffect(() => {
@@ -551,40 +592,6 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading last read lesson:', error);
-    }
-  };
-
-  const extractTitleFromContent = (content: string, fallbackTitle?: string): string => {
-    // Try to extract title from content
-    const lines = content.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // Look for H1 or H2 headers
-      if (trimmed.startsWith('# ') || trimmed.startsWith('## ')) {
-        return trimmed.replace(/^#+\s*/, '').trim();
-      }
-    }
-    return fallbackTitle || 'Урок';
-  };
-
-  const updateLastReadLesson = (path: string, lesson: Lesson, scrollPosition: number) => {
-    const title = lesson.frontmatter?.title || 
-                 extractTitleFromContent(lesson.content) ||
-                 path.split('/').pop()?.replace('.md', '') || 
-                 'Урок';
-    
-    const lastRead = {
-      path,
-      title,
-      timestamp: Date.now(),
-      scrollPosition
-    };
-    
-    try {
-      batchedLocalStorageSet('last_read_lesson', lastRead);
-      setLastReadLesson(lastRead);
-    } catch (error) {
-      console.error('Error saving last read lesson:', error);
     }
   };
 
@@ -676,9 +683,40 @@ const App: React.FC = () => {
     );
   }
 
+  if (isAdmin && showAdminPage) {
+    return (
+        <Suspense fallback={<div className="loading-container"><div className="loading-text">Loading...</div></div>}>
+          <AdminPage onBack={() => setShowAdminPage(false)} />
+        </Suspense>
+    );
+  }
+
   return (
     <div className="app">
-      <ThemeToggle theme={theme} onThemeChange={handleThemeChange} />
+      <FloatingActionButton
+        theme={theme}
+        onThemeChange={handleThemeChange}
+        onProfileClick={() => setShowUserProfile(true)}
+      />
+      
+      {showUserProfile && (
+        <Suspense fallback={<div className="loading-container"><div className="loading-text">Loading...</div></div>}>
+          <UserProfile 
+            onClose={() => setShowUserProfile(false)}
+            telegramUser={window.Telegram?.WebApp?.initDataUnsafe?.user}
+          />
+        </Suspense>
+      )}
+      
+      {isAdmin && (
+          <button 
+              className="admin-button" 
+              onClick={() => setShowAdminPage(true)}
+              title="Admin Panel"
+          >
+              ⚙️
+          </button>
+      )}
       <Sidebar
         structure={lessonStructure}
         isOpen={sidebarOpen}
@@ -723,6 +761,7 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
+
 
             <h1>Добро пожаловать в H.E.A.R.T!</h1>
             <p>Ваш надежный проводник в мире трейдинга</p>
