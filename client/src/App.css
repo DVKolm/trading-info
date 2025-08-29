@@ -510,6 +510,8 @@ code {
 .welcome-screen.no-animations::before,
 .welcome-screen.no-animations::after {
   animation: none !important;
+  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .welcome-screen::before {
