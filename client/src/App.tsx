@@ -155,10 +155,29 @@ const App: React.FC = () => {
       const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       
       // Проверяем localStorage сначала
-      const savedSubscription = localStorage.getItem('telegram_subscription_verified');
+      const savedSubscriptionData = localStorage.getItem('telegram_subscription_verified');
+      
+      if (savedSubscriptionData) {
+        try {
+          const subscriptionData = JSON.parse(savedSubscriptionData);
+          const now = Date.now();
+          
+          // Проверяем, не истекла ли подписка (5 минут)
+          if (subscriptionData.timestamp && (now - subscriptionData.timestamp) > 5 * 60 * 1000) {
+            console.log('Subscription cache expired, removing from localStorage');
+            localStorage.removeItem('telegram_subscription_verified');
+            setIsSubscribed(false);
+            return;
+          }
+        } catch (e) {
+          // Старый формат данных (просто 'true'), удаляем
+          console.log('Old subscription format detected, removing from localStorage');
+          localStorage.removeItem('telegram_subscription_verified');
+        }
+      }
       
       // Если есть сохраненная подписка И есть ID пользователя, проверяем через API
-      if (savedSubscription === 'true' && telegramUserId) {
+      if (savedSubscriptionData && telegramUserId) {
         try {
           const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
           const response = await fetch(`${apiUrl}/api/subscription/status/${telegramUserId}`);
@@ -167,24 +186,33 @@ const App: React.FC = () => {
             const data = await response.json();
             
             if (data.subscribed) {
-              // Подписка подтверждена через API
+              // Подписка подтверждена через API - обновляем timestamp
+              const subscriptionData = {
+                verified: true,
+                timestamp: Date.now()
+              };
+              localStorage.setItem('telegram_subscription_verified', JSON.stringify(subscriptionData));
               setIsSubscribed(true);
               return;
             } else {
               // Подписка больше не активна, удаляем из localStorage
               localStorage.removeItem('telegram_subscription_verified');
               console.log('Subscription status changed: user is no longer subscribed');
+              setIsSubscribed(false);
+              return;
             }
           } else {
             console.error('Failed to check subscription status via API');
           }
         } catch (apiError) {
           console.error('Error checking subscription via API:', apiError);
-          // Если API недоступен, доверяем localStorage
-          setIsSubscribed(true);
-          return;
+          // Если API недоступен, доверяем localStorage только если кеш не истек
+          if (savedSubscriptionData) {
+            setIsSubscribed(true);
+            return;
+          }
         }
-      } else if (savedSubscription === 'true' && !telegramUserId) {
+      } else if (savedSubscriptionData && !telegramUserId) {
         // Нет ID пользователя, но есть сохраненная подписка (может быть тестирование)
         setIsSubscribed(true);
         return;

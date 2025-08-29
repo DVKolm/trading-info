@@ -18,9 +18,23 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
   useEffect(() => {
     // Проверяем, есть ли сохраненная подписка в localStorage
     const savedSubscription = localStorage.getItem('telegram_subscription_verified');
-    if (savedSubscription === 'true') {
-      setStep('verified');
-      onSubscriptionVerified();
+    if (savedSubscription) {
+      try {
+        const subscriptionData = JSON.parse(savedSubscription);
+        // Проверяем, прошло ли 5 минут с момента верификации
+        const minutesSinceVerification = (Date.now() - subscriptionData.timestamp) / (1000 * 60);
+        
+        if (subscriptionData.verified && minutesSinceVerification < 5) {
+          setStep('verified');
+          onSubscriptionVerified();
+        } else {
+          // Подписка истекла, удаляем из localStorage
+          localStorage.removeItem('telegram_subscription_verified');
+        }
+      } catch (error) {
+        // Старый формат или поврежденные данные, удаляем
+        localStorage.removeItem('telegram_subscription_verified');
+      }
     }
   }, [onSubscriptionVerified]);
 
@@ -67,7 +81,11 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
         // В режиме разработки - для тестирования
         if (process.env.NODE_ENV === 'development') {
           console.log('Development mode: simulating subscription verification');
-          localStorage.setItem('telegram_subscription_verified', 'true');
+          const subscriptionData = {
+            verified: true,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('telegram_subscription_verified', JSON.stringify(subscriptionData));
           setStep('verified');
           onSubscriptionVerified();
           return;
@@ -107,7 +125,11 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       
       if (result.verified) {
         // Пользователь подписан
-        localStorage.setItem('telegram_subscription_verified', 'true');
+        const subscriptionData = {
+          verified: true,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('telegram_subscription_verified', JSON.stringify(subscriptionData));
         setStep('verified');
         onSubscriptionVerified();
       } else {
@@ -132,7 +154,11 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       // В режиме разработки - для тестирования  
       if (process.env.NODE_ENV === 'development') {
         console.log('Development mode: API error, simulating successful verification for testing');
-        localStorage.setItem('telegram_subscription_verified', 'true');
+        const subscriptionData = {
+          verified: true,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('telegram_subscription_verified', JSON.stringify(subscriptionData));
         setStep('verified');
         onSubscriptionVerified();
         return;
