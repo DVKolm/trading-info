@@ -13,6 +13,9 @@ interface LessonViewerProps {
   nextLessonPath?: string | null;
 }
 
+// Image cache to prevent reloading
+const imageCache = new Set<string>();
+
 // Lazy loading image component
 interface LazyImageProps {
   src: string;
@@ -22,10 +25,11 @@ interface LazyImageProps {
 }
 
 const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => {
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(() => imageCache.has(src));
   const [error, setError] = useState(false);
 
   const handleLoad = () => {
+    imageCache.add(src);
     setLoaded(true);
   };
 
@@ -104,7 +108,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
           borderRadius: '8px',
           display: 'block',
           opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.3s ease-in-out'
+          transition: loaded ? 'opacity 0.2s ease-in-out' : 'none'
         }}
       />
     </div>
