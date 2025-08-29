@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
 import FloatingActionButton from './components/FloatingActionButton';
 import { LessonStructure, Lesson } from './types';
+import { fixCorruptedRussianText, sanitizeLessonTitle, cleanupCorruptedLessonData } from './utils/encodingUtils';
 import './App.css';
 
 // Lazy load non-essential components
@@ -84,17 +85,20 @@ const App: React.FC = () => {
       const trimmed = line.trim();
       // Look for H1 or H2 headers
       if (trimmed.startsWith('# ') || trimmed.startsWith('## ')) {
-        return trimmed.replace(/^#+\s*/, '').trim();
+        const extractedTitle = trimmed.replace(/^#+\s*/, '').trim();
+        return fixCorruptedRussianText(extractedTitle);
       }
     }
-    return fallbackTitle || 'Урок';
+    return sanitizeLessonTitle(fallbackTitle || 'Урок');
   };
 
   const updateLastReadLesson = useCallback((path: string, lesson: Lesson, scrollPosition: number) => {
-    const title = lesson.frontmatter?.title || 
-                 extractTitleFromContent(lesson.content) ||
-                 path.split('/').pop()?.replace('.md', '') || 
-                 'Урок';
+    const rawTitle = lesson.frontmatter?.title || 
+                     extractTitleFromContent(lesson.content) ||
+                     path.split('/').pop()?.replace('.md', '') || 
+                     'Урок';
+    
+    const title = sanitizeLessonTitle(rawTitle);
     
     const lastRead = {
       path,
@@ -121,6 +125,9 @@ const App: React.FC = () => {
       tg.setHeaderColor('#1e1e1e');
       tg.setBackgroundColor('#1e1e1e');
     }
+
+    // Clean up corrupted lesson data from localStorage
+    cleanupCorruptedLessonData();
 
     // Always load lesson structure first, then check subscription
     fetchLessonStructure();

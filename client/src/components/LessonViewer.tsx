@@ -6,6 +6,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Clock, CheckCircle, TrendingUp, Eye } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
+import { sanitizeLessonTitle } from '../utils/encodingUtils';
 
 interface LessonViewerProps {
   lesson: Lesson;
@@ -202,7 +203,7 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
 
       <div className="lesson-header">
         {lesson.frontmatter.title && (
-          <h1 className="lesson-title">{lesson.frontmatter.title}</h1>
+          <h1 className="lesson-title">{sanitizeLessonTitle(lesson.frontmatter.title)}</h1>
         )}
         {lesson.frontmatter.description && (
           <p className="lesson-description">{lesson.frontmatter.description}</p>
