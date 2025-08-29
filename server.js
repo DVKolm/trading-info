@@ -6,6 +6,91 @@ const path = require('path');
 const { marked } = require('marked');
 const matter = require('gray-matter');
 const multer = require("multer");
+const winston = require('winston');
+require('winston-daily-rotate-file');
+
+// Configure Winston logger
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'trading-info-app' },
+  transports: [
+    // Write all logs with importance level of 'error' or less to 'error.log'
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+
+    // Write all logs to app.log with daily rotation
+    new winston.transports.DailyRotateFile({
+      filename: 'logs/app-%DATE%.log',
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: winston.format.combine(
+        winston.format.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        winston.format.printf(({ timestamp, level, message, ...meta }) => {
+          return `${timestamp} [${level.toUpperCase()}] ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+        })
+      )
+    }),
+
+    // Also create a simple app.log file for tail -f
+    new winston.transports.File({ 
+      filename: 'app.log',
+      format: winston.format.combine(
+        winston.format.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        winston.format.printf(({ timestamp, level, message, ...meta }) => {
+          return `${timestamp} [${level.toUpperCase()}] ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+        })
+      )
+    })
+  ]
+});
+
+// If we're not in production then log to the console with the format:
+// `${info.level}: ${info.message} JSON.stringify({ ...rest })`
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple(),
+      winston.format.printf(({ timestamp, level, message, ...meta }) => {
+        return `${timestamp} [${level}] ${message} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+      })
+    )
+  }));
+}
+
+// Ensure logs directory exists
+fs.ensureDirSync('logs');
+
+// Middleware to log HTTP requests
+const logRequests = (req, res, next) => {
+  const start = Date.now();
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info('HTTP Request', {
+      method: req.method,
+      url: req.url,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+  });
+
+  next();
+};
 
 // Configure marked to suppress deprecated warnings
 marked.setOptions({
@@ -48,6 +133,14 @@ async function isValidTelegramData(initData) {
 
 app.use(cors());
 app.use(express.json());
+app.use(logRequests);
+
+// Log server startup
+logger.info('Starting Trading Info Server', {
+  port: PORT,
+  nodeEnv: process.env.NODE_ENV,
+  isProduction
+});
 
 
 // API route to serve lesson images by POST with JSON body to avoid URL encoding issues
@@ -81,22 +174,39 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
     const { initData } = req.body;
+
+    logger.info('Upload lesson attempt', { 
+      filename: req.file?.originalname,
+      hasInitData: !!initData,
+      fileSize: req.file?.size
+    });
+
     if (!initData) {
+        logger.warn('Upload failed: No initData provided');
         return res.status(401).json({ error: 'Unauthorized: No initData provided' });
     }
 
     const { isValid, user } = await isValidTelegramData(initData);
 
     if (!isValid || !authorizedUserIds.includes(String(user.id))) {
+        logger.warn('Upload failed: Unauthorized user', { userId: user?.id, isValid });
         return res.status(403).json({ error: 'Forbidden: Invalid user' });
     }
 
     if (!req.file) {
+        logger.warn('Upload failed: No file uploaded');
         return res.status(400).json({ error: 'No file uploaded.' });
     }
 
     const originalName = req.file.originalname;
     const fileBuffer = req.file.buffer;
+
+    logger.info('Processing lesson upload', {
+      filename: originalName,
+      fileSize: fileBuffer.length,
+      userId: user.id,
+      username: user.username
+    });
 
     try {
         if (path.extname(originalName) === '.zip') {
@@ -149,9 +259,19 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
             return res.status(400).json({ error: 'Unsupported file type. Please upload a .md or .zip file.' });
         }
 
+        logger.info('Lesson uploaded successfully', {
+          filename: originalName,
+          userId: user.id,
+          username: user.username
+        });
         res.status(200).json({ message: 'Lesson uploaded successfully.' });
     } catch (error) {
-        console.error('Error uploading lesson:', error);
+        logger.error('Error uploading lesson', {
+          error: error.message,
+          stack: error.stack,
+          filename: originalName,
+          userId: user?.id
+        });
         res.status(500).json({ error: 'Failed to upload lesson.' });
     }
 });
@@ -338,17 +458,27 @@ async function scanLessonsDirectory(dirPath, relativePath = '') {
 // Get lessons structure
 app.get('/api/lessons/structure', async (req, res) => {
   try {
+    logger.info('Getting lessons structure');
+
     // Ensure lessons directory exists
     await fs.ensureDir(LESSONS_DIR);
-    
+
     // Build lesson mapping for internal links
     lessonMap.clear();
     await buildLessonMap(LESSONS_DIR);
-    
+
     const structure = await scanLessonsDirectory(LESSONS_DIR);
+
+    logger.info('Lessons structure retrieved successfully', {
+      itemCount: structure.length
+    });
+
     res.json({ structure });
   } catch (error) {
-    console.error('Error getting lessons structure:', error);
+    logger.error('Error getting lessons structure', {
+      error: error.message,
+      stack: error.stack
+    });
     res.status(500).json({ error: 'Failed to get lessons structure' });
   }
 });
