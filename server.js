@@ -224,7 +224,7 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
             const lessonName = path.basename(mdFileEntry.entryName, '.md');
 
             // Default to intermediate level folder for zip uploads
-            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень');
+            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
             
             // Ensure intermediate level directory exists
             await fs.ensureDir(intermediateLevelDir);
@@ -237,7 +237,7 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
             const lessonName = path.basename(originalName, '.md');
 
             // Default to intermediate level folder for .md uploads
-            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень');
+            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
             
             // Ensure intermediate level directory exists
             await fs.ensureDir(intermediateLevelDir);
@@ -265,6 +265,81 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
           userId: user?.id
         });
         res.status(500).json({ error: 'Failed to upload lesson.' });
+    }
+});
+
+// Delete lesson endpoint
+app.delete('/api/delete-lesson', express.json(), async (req, res) => {
+    const { initData, lessonPath } = req.body;
+
+    logger.info('Delete lesson attempt', { 
+        lessonPath,
+        hasInitData: !!initData
+    });
+
+    if (!initData) {
+        logger.warn('Delete failed: No initData provided');
+        return res.status(401).json({ error: 'Unauthorized: No initData provided' });
+    }
+
+    const { isValid, user } = await isValidTelegramData(initData);
+
+    if (!isValid || !authorizedUserIds.includes(String(user.id))) {
+        logger.warn('Delete failed: Unauthorized user', { userId: user?.id, isValid });
+        return res.status(403).json({ error: 'Forbidden: Invalid user' });
+    }
+
+    if (!lessonPath) {
+        logger.warn('Delete failed: No lesson path provided');
+        return res.status(400).json({ error: 'No lesson path provided.' });
+    }
+
+    try {
+        const fullPath = path.join(LESSONS_DIR, lessonPath);
+        
+        // Security check - ensure the path is within lessons directory
+        const resolvedPath = path.resolve(fullPath);
+        const resolvedLessonsDir = path.resolve(LESSONS_DIR);
+        
+        if (!resolvedPath.startsWith(resolvedLessonsDir)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        // Check if it's a file or directory
+        const stats = await fs.stat(fullPath);
+        
+        if (stats.isDirectory()) {
+            // Delete entire directory
+            await fs.remove(fullPath);
+            logger.info('Directory deleted successfully', {
+                lessonPath,
+                userId: user.id,
+                username: user.username
+            });
+        } else {
+            // Delete single file
+            await fs.unlink(fullPath);
+            logger.info('File deleted successfully', {
+                lessonPath,
+                userId: user.id,
+                username: user.username
+            });
+        }
+
+        res.status(200).json({ message: 'Lesson deleted successfully.' });
+    } catch (error) {
+        logger.error('Error deleting lesson', {
+          error: error.message,
+          stack: error.stack,
+          lessonPath,
+          userId: user?.id
+        });
+        
+        if (error.code === 'ENOENT') {
+            res.status(404).json({ error: 'Lesson not found.' });
+        } else {
+            res.status(500).json({ error: 'Failed to delete lesson.' });
+        }
     }
 });
 

@@ -6,7 +6,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Clock, CheckCircle, TrendingUp, Eye } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
-import LessonContinuationModal from './LessonContinuationModal';
+import LessonContinueNotification from './LessonContinueNotification';
 
 interface LessonViewerProps {
   lesson: Lesson;
@@ -96,34 +96,39 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
   const { currentSession, metrics, isActive, handleScroll, markAsComplete } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
-  const [showContinuationModal, setShowContinuationModal] = useState(false);
-  const [hasShownModal, setHasShownModal] = useState(false);
+  const [showContinueNotification, setShowContinueNotification] = useState(false);
+  const [hasShownNotification, setHasShownNotification] = useState(false);
 
-  // Check for previous progress and show continuation modal
+  // Check for previous progress and show continuation notification
   useEffect(() => {
-    if (!hasShownModal && lesson) {
-      // Check if there's previous progress for this lesson
-      const lessonKey = `lesson_progress_${lesson.path}`;
-      const savedProgress = localStorage.getItem(lessonKey);
-      
-      if (savedProgress) {
-        try {
-          const progressData = JSON.parse(savedProgress);
-          // Show modal if there's meaningful progress (more than 10% read or some time spent)
-          if (progressData.scrollPosition > 0.1 || progressData.timeSpent > 30000) {
-            setShowContinuationModal(true);
+    if (!hasShownNotification && lesson) {
+      // Small delay to let the lesson load first
+      const timer = setTimeout(() => {
+        // Check if there's previous progress for this lesson
+        const lessonKey = `lesson_progress_${lesson.path}`;
+        const savedProgress = localStorage.getItem(lessonKey);
+        
+        if (savedProgress) {
+          try {
+            const progressData = JSON.parse(savedProgress);
+            // Show notification if there's meaningful progress (more than 10% read or some time spent)
+            if (progressData.scrollPosition > 0.1 || progressData.timeSpent > 30000) {
+              setShowContinueNotification(true);
+            }
+          } catch (error) {
+            // Ignore parsing errors
           }
-        } catch (error) {
-          // Ignore parsing errors
         }
-      }
-      setHasShownModal(true);
-    }
-  }, [lesson, hasShownModal]);
+        setHasShownNotification(true);
+      }, 1000); // Show notification after 1 second
 
-  // Modal handlers
-  const handleContinueLesson = useCallback(() => {
-    setShowContinuationModal(false);
+      return () => clearTimeout(timer);
+    }
+  }, [lesson, hasShownNotification]);
+
+  // Notification handlers
+  const handleContinueReading = useCallback(() => {
+    setShowContinueNotification(false);
     // Restore scroll position if available
     const lessonKey = `lesson_progress_${lesson.path}`;
     const savedProgress = localStorage.getItem(lessonKey);
@@ -138,16 +143,9 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     }
   }, [lesson.path]);
 
-  const handleStartOver = useCallback(() => {
-    setShowContinuationModal(false);
-    // Clear previous progress
-    const lessonKey = `lesson_progress_${lesson.path}`;
-    localStorage.removeItem(lessonKey);
-    // Reset scroll to top
-    if (lessonViewerRef.current) {
-      lessonViewerRef.current.scrollTop = 0;
-    }
-  }, [lesson.path]);
+  const handleDismissNotification = useCallback(() => {
+    setShowContinueNotification(false);
+  }, []);
 
   // Memoized process Obsidian-style internal links [[Link Name]] and images
   const processedContent = useMemo(() => {
@@ -420,11 +418,11 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         )}
       </div>
 
-      {/* Lesson Continuation Modal */}
-      <LessonContinuationModal
-        isOpen={showContinuationModal}
-        onContinue={handleContinueLesson}
-        onStartOver={handleStartOver}
+      {/* Lesson Continue Notification */}
+      <LessonContinueNotification
+        isVisible={showContinueNotification}
+        onContinue={handleContinueReading}
+        onDismiss={handleDismissNotification}
         lessonTitle={lesson.frontmatter?.title || lesson.path.split('/').pop()?.replace('.md', '') || 'Урок'}
       />
     </div>
