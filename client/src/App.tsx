@@ -697,6 +697,8 @@ const App: React.FC = () => {
         theme={theme}
         onThemeChange={handleThemeChange}
         onProfileClick={() => setShowUserProfile(true)}
+        isAdmin={!!isAdmin}
+        onAdminClick={() => setShowAdminPage(true)}
       />
       
       {showUserProfile && (
@@ -708,15 +710,6 @@ const App: React.FC = () => {
         </Suspense>
       )}
       
-      {isAdmin && (
-          <button 
-              className="admin-button" 
-              onClick={() => setShowAdminPage(true)}
-              title="Admin Panel"
-          >
-              ⚙️
-          </button>
-      )}
       <Sidebar
         structure={lessonStructure}
         isOpen={sidebarOpen}

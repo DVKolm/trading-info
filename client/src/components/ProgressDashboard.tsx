@@ -218,15 +218,6 @@ const ProgressDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon">
-            <TrendingUp size={24} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{Math.round(stats.averageReadingSpeed)}</div>
-            <div className="stat-label">WPM Average</div>
-          </div>
-        </div>
 
         <div className="stat-card">
           <div className="stat-icon">

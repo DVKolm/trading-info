@@ -47,9 +47,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose, telegramUser }) => {
               <h3>{displayName}</h3>
               <div className="user-badges">
                 <span className="badge">Learner</span>
-                {telegramUser && (
-                  <span className="badge telegram">Telegram Connected</span>
-                )}
               </div>
             </div>
           </div>

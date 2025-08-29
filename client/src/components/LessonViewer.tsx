@@ -198,56 +198,6 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
 
   return (
     <div className="lesson-viewer" ref={lessonViewerRef}>
-      {/* Progress Panel */}
-      {(currentSession || metrics) && (
-        <div className="progress-panel">
-          <div className="progress-stats">
-            {currentSession && (
-              <>
-                <div className="progress-stat">
-                  <Clock size={16} />
-                  <span>{formatTime(currentSession.activeTime + (isActive ? Date.now() - currentSession.lastActivityTime : 0))}</span>
-                </div>
-                <div className="progress-stat">
-                  <TrendingUp size={16} />
-                  <span>{Math.round(currentSession.scrollProgress)}%</span>
-                </div>
-              </>
-            )}
-            {metrics && (
-              <>
-                <div className="progress-stat">
-                  <Eye size={16} />
-                  <span>Visit {metrics.visits}</span>
-                </div>
-                <div className="progress-stat">
-                  <div 
-                    className="engagement-indicator" 
-                    style={{ backgroundColor: getEngagementColor(metrics.engagementLevel) }}
-                  />
-                  <span>{metrics.engagementLevel}</span>
-                </div>
-              </>
-            )}
-            {metrics && metrics.completionScore >= 0.8 && (
-              <div className="progress-stat completion">
-                <CheckCircle size={16} />
-                <span>Complete</span>
-              </div>
-            )}
-          </div>
-          {metrics && metrics.completionScore < 0.8 && (
-            <button 
-              className="mark-complete-btn"
-              onClick={markAsComplete}
-              title="Mark this lesson as complete"
-            >
-              <CheckCircle size={16} />
-              Mark Complete
-            </button>
-          )}
-        </div>
-      )}
 
       <div className="lesson-header">
         {lesson.frontmatter.title && (

@@ -1182,6 +1182,36 @@ code {
   border-color: var(--accent-primary);
 }
 
+.fab-action.admin-button {
+  transition: all 0.2s ease;
+}
+
+/* Light theme - admin button */
+[data-theme="light"] .fab-action.admin-button {
+  background: #ff6b6b;
+  color: white;
+  border-color: #ff5252;
+}
+
+[data-theme="light"] .fab-action.admin-button:hover {
+  background: #ff5252;
+  transform: scale(1.05);
+  border-color: var(--accent-primary);
+}
+
+/* Dark theme - admin button */
+[data-theme="dark"] .fab-action.admin-button {
+  background: #ff4757;
+  color: white;
+  border-color: #ff3742;
+}
+
+[data-theme="dark"] .fab-action.admin-button:hover {
+  background: #ff3742;
+  transform: scale(1.05);
+  border-color: var(--accent-primary);
+}
+
 .fab-overlay {
   position: fixed;
   top: 0;

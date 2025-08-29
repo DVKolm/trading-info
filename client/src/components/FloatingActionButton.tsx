@@ -1,16 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, User, Sun, Moon, X } from 'lucide-react';
+import { Settings, User, Sun, Moon, X, Shield } from 'lucide-react';
 
 interface FloatingActionButtonProps {
   theme: 'light' | 'dark';
   onThemeChange: (theme: 'light' | 'dark') => void;
   onProfileClick: () => void;
+  isAdmin?: boolean;
+  onAdminClick?: () => void;
 }
 
 const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ 
   theme, 
   onThemeChange, 
-  onProfileClick 
+  onProfileClick,
+  isAdmin,
+  onAdminClick 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -47,6 +51,13 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     setIsOpen(false);
   };
 
+  const handleAdminClick = () => {
+    if (onAdminClick) {
+      onAdminClick();
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div className={`floating-action-button ${isOpen ? 'open' : ''}`} ref={fabRef}>
       {/* Action Buttons */}
@@ -66,6 +77,16 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         >
           <User size={20} />
         </button>
+        
+        {isAdmin && (
+          <button 
+            className="fab-action admin-button"
+            onClick={handleAdminClick}
+            title="Admin Panel"
+          >
+            <Shield size={20} />
+          </button>
+        )}
       </div>
 
       {/* Main FAB Button */}
