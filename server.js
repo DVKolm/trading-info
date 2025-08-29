@@ -7,6 +7,8 @@ const { marked } = require('marked');
 const matter = require('gray-matter');
 const multer = require("multer");
 const winston = require('winston');
+const crypto = require('crypto');
+const AdmZip = require('adm-zip');
 require('winston-daily-rotate-file');
 
 // Configure Winston logger
@@ -105,6 +107,7 @@ const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
 const authorizedUserIds = ['781182099', '5974666109'];
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 async function isValidTelegramData(initData) {
     const encoded = decodeURIComponent(initData);
@@ -220,39 +223,28 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
 
             const lessonName = path.basename(mdFileEntry.entryName, '.md');
 
-            // Heuristic to find category folder
-            const lessonFiles = await getLessons();
-            let lessonDir = '';
-
-            const sampleLesson = lessonFiles.find(l => l.title.includes(lessonName.split('.')[0]));
-
-            if (sampleLesson) {
-                lessonDir = path.dirname(sampleLesson.fullPath);
-            } else {
-                // Default to a new category if no match found
-                const newCategory = "Новая категория";
-                lessonDir = path.join('lessons', newCategory, lessonName);
-            }
-
-            // Extract to the determined directory
-            zip.extractAllTo(lessonDir, true);
+            // Default to intermediate level folder for zip uploads
+            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень');
+            
+            // Ensure intermediate level directory exists
+            await fs.ensureDir(intermediateLevelDir);
+            
+            // Extract directly to intermediate level folder
+            // The zip should contain a folder with the lesson files
+            zip.extractAllTo(intermediateLevelDir, true);
 
         } else if (path.extname(originalName) === '.md') {
             const lessonName = path.basename(originalName, '.md');
 
-            // Heuristic to find category folder
-            const lessonFiles = await getLessons();
-            let lessonDir = '';
-
-            const sampleLesson = lessonFiles.find(l => l.title.includes(lessonName.split('.')[0]));
-            if (sampleLesson) {
-                lessonDir = path.dirname(sampleLesson.fullPath);
-            } else {
-                 // Default to a new category if no match found
-                const newCategory = "Новая категория";
-                lessonDir = path.join('lessons', newCategory, lessonName);
-                await fs.ensureDir(lessonDir);
-            }
+            // Default to intermediate level folder for .md uploads
+            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень');
+            
+            // Ensure intermediate level directory exists
+            await fs.ensureDir(intermediateLevelDir);
+            
+            // Create a subfolder for the lesson
+            const lessonDir = path.join(intermediateLevelDir, lessonName);
+            await fs.ensureDir(lessonDir);
 
             await fs.writeFile(path.join(lessonDir, originalName), fileBuffer);
         } else {
@@ -366,6 +358,51 @@ async function buildLessonMap(dirPath, relativePath = '') {
   } catch (error) {
     console.error('Error building lesson map:', error);
   }
+}
+
+// Function to get all lessons for upload logic
+async function getLessons() {
+  const lessons = [];
+  
+  async function scanRecursively(dirPath, relativePath = '') {
+    try {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        const itemRelativePath = path.join(relativePath, entry.name);
+        
+        if (entry.isDirectory()) {
+          await scanRecursively(fullPath, itemRelativePath);
+        } else if (entry.name.endsWith('.md')) {
+          try {
+            const content = await fs.readFile(fullPath, 'utf8');
+            const parsed = matter(content);
+            
+            let title = parsed.data.title || entry.name.replace('.md', '');
+            const firstHeading = content.match(/^#\s+(.+)$/m);
+            if (firstHeading) {
+              title = firstHeading[1];
+            }
+            
+            lessons.push({
+              title,
+              fullPath,
+              relativePath: itemRelativePath.replace(/\\/g, '/'),
+              filename: entry.name
+            });
+          } catch (error) {
+            console.warn(`Could not read file ${fullPath}:`, error.message);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error scanning directory:', error);
+    }
+  }
+  
+  await scanRecursively(LESSONS_DIR);
+  return lessons;
 }
 
 // Function to scan directory structure

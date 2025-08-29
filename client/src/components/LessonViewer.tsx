@@ -6,6 +6,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Clock, CheckCircle, TrendingUp, Eye } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
+import LessonContinuationModal from './LessonContinuationModal';
 
 interface LessonViewerProps {
   lesson: Lesson;
@@ -95,6 +96,58 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
   const { currentSession, metrics, isActive, handleScroll, markAsComplete } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
+  const [showContinuationModal, setShowContinuationModal] = useState(false);
+  const [hasShownModal, setHasShownModal] = useState(false);
+
+  // Check for previous progress and show continuation modal
+  useEffect(() => {
+    if (!hasShownModal && lesson) {
+      // Check if there's previous progress for this lesson
+      const lessonKey = `lesson_progress_${lesson.path}`;
+      const savedProgress = localStorage.getItem(lessonKey);
+      
+      if (savedProgress) {
+        try {
+          const progressData = JSON.parse(savedProgress);
+          // Show modal if there's meaningful progress (more than 10% read or some time spent)
+          if (progressData.scrollPosition > 0.1 || progressData.timeSpent > 30000) {
+            setShowContinuationModal(true);
+          }
+        } catch (error) {
+          // Ignore parsing errors
+        }
+      }
+      setHasShownModal(true);
+    }
+  }, [lesson, hasShownModal]);
+
+  // Modal handlers
+  const handleContinueLesson = useCallback(() => {
+    setShowContinuationModal(false);
+    // Restore scroll position if available
+    const lessonKey = `lesson_progress_${lesson.path}`;
+    const savedProgress = localStorage.getItem(lessonKey);
+    if (savedProgress && lessonViewerRef.current) {
+      try {
+        const progressData = JSON.parse(savedProgress);
+        const scrollPosition = progressData.scrollPosition * lessonViewerRef.current.scrollHeight;
+        lessonViewerRef.current.scrollTop = scrollPosition;
+      } catch (error) {
+        // Ignore parsing errors
+      }
+    }
+  }, [lesson.path]);
+
+  const handleStartOver = useCallback(() => {
+    setShowContinuationModal(false);
+    // Clear previous progress
+    const lessonKey = `lesson_progress_${lesson.path}`;
+    localStorage.removeItem(lessonKey);
+    // Reset scroll to top
+    if (lessonViewerRef.current) {
+      lessonViewerRef.current.scrollTop = 0;
+    }
+  }, [lesson.path]);
 
   // Memoized process Obsidian-style internal links [[Link Name]] and images
   const processedContent = useMemo(() => {
@@ -366,6 +419,14 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
           </button>
         )}
       </div>
+
+      {/* Lesson Continuation Modal */}
+      <LessonContinuationModal
+        isOpen={showContinuationModal}
+        onContinue={handleContinueLesson}
+        onStartOver={handleStartOver}
+        lessonTitle={lesson.frontmatter?.title || lesson.path.split('/').pop()?.replace('.md', '') || 'Урок'}
+      />
     </div>
   );
 });

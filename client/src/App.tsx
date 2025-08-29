@@ -67,8 +67,6 @@ const App: React.FC = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<string[]>([]);
   const [scrollPositions, setScrollPositions] = useState<Map<string, number>>(new Map());
-  const [lastReadLesson, setLastReadLesson] = useState<{path: string, title: string, timestamp: number, scrollPosition: number} | null>(null);
-  const [showContinueReading, setShowContinueReading] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [welcomePageReady, setWelcomePageReady] = useState(false);
   const [welcomeAnimationsEnabled, setWelcomeAnimationsEnabled] = useState(false);
@@ -107,7 +105,6 @@ const App: React.FC = () => {
     
     try {
       batchedLocalStorageSet('last_read_lesson', lastRead);
-      setLastReadLesson(lastRead);
     } catch (error) {
       console.error('Error saving last read lesson:', error);
     }
@@ -128,7 +125,6 @@ const App: React.FC = () => {
     // Always load lesson structure first, then check subscription
     fetchLessonStructure();
     checkSubscriptionStatus();
-    loadLastReadLesson();
     loadTheme();
   }, []);
 
@@ -578,33 +574,6 @@ const App: React.FC = () => {
     return () => clearTimeout(preloadTimer);
   }, [nextLessonPath]);
 
-  const loadLastReadLesson = () => {
-    try {
-      const savedLastRead = localStorage.getItem('last_read_lesson');
-      if (savedLastRead) {
-        const lastRead = JSON.parse(savedLastRead);
-        // Show continue reading if it was read within last 7 days and has significant progress
-        const daysSinceRead = (Date.now() - lastRead.timestamp) / (1000 * 60 * 60 * 24);
-        if (daysSinceRead <= 7 && lastRead.scrollPosition > 200) {
-          setLastReadLesson(lastRead);
-          setShowContinueReading(true);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading last read lesson:', error);
-    }
-  };
-
-  const handleContinueReading = () => {
-    if (lastReadLesson) {
-      handleLessonSelect(lastReadLesson.path, lastReadLesson.scrollPosition);
-      setShowContinueReading(false);
-    }
-  };
-
-  const handleDismissContinueReading = () => {
-    setShowContinueReading(false);
-  };
 
   const loadTheme = () => {
     try {
@@ -734,32 +703,6 @@ const App: React.FC = () => {
           />
         ) : (
           <div className={`welcome-screen ${welcomeAnimationsEnabled ? '' : 'no-animations'}`}>
-            {/* Global Continue Reading Panel */}
-            {showContinueReading && lastReadLesson && (
-              <div className="global-continue-reading">
-                <div className="continue-reading-card">
-                  <div className="continue-reading-info">
-                    <span className="lesson-title">{lastReadLesson.title}</span>
-                  </div>
-                  <div className="continue-reading-actions">
-                    <button 
-                      className="continue-btn"
-                      onClick={handleContinueReading}
-                    >
-                      Продолжить
-                    </button>
-                    <button 
-                      className="dismiss-btn"
-                      onClick={handleDismissContinueReading}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-
             <h1>Добро пожаловать в H.E.A.R.T!</h1>
             <p>Ваш надежный проводник в мире трейдинга</p>
             
