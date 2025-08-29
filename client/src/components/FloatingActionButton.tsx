@@ -89,21 +89,13 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         
         {isAdmin && (
           <button 
-            className="fab-action admin-button"
+            className="fab-action admin-upload-button"
             onClick={handleAdminClick}
-            title="Admin Panel"
+            title="Admin Media Panel"
           >
-            <Shield size={20} />
+            <Upload size={20} />
           </button>
         )}
-        
-        <button 
-          className="fab-action upload-button"
-          onClick={handleUploadClick}
-          title="Upload Files"
-        >
-          <Upload size={20} />
-        </button>
       </div>
 
       {/* Main FAB Button */}
