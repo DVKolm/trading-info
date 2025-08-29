@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { WebApp } from '@twa-dev/types';
+import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
 import ThemeToggle from './components/ThemeToggle';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
 
-// Lazy load components that are not always visible
+// Lazy load только SubscriptionCheck, так как он нужен редко
 const SubscriptionCheck = lazy(() => import('./components/SubscriptionCheck'));
-const Sidebar = lazy(() => import('./components/Sidebar'));
 
 declare global {
   interface Window {
@@ -654,17 +654,15 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <ThemeToggle theme={theme} onThemeChange={handleThemeChange} />
-      <Suspense fallback={<div style={{ width: '300px', background: 'var(--bg-secondary)' }} />}>
-        <Sidebar
-          structure={lessonStructure}
-          isOpen={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          onLessonSelect={handleLessonSelect}
-          onSearch={handleSearch}
-          isSubscribed={isSubscribed}
-          onSubscriptionRequired={() => setError('Для доступа к этому уроку требуется подписка на наш Telegram канал')}
-        />
-      </Suspense>
+      <Sidebar
+        structure={lessonStructure}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onLessonSelect={handleLessonSelect}
+        onSearch={handleSearch}
+        isSubscribed={isSubscribed}
+        onSubscriptionRequired={() => setError('Для доступа к этому уроку требуется подписка на наш Telegram канал')}
+      />
       
       <main className={`main-content ${sidebarOpen ? 'sidebar-open' : ''}`}>
         {selectedLesson ? (
