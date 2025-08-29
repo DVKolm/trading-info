@@ -97,7 +97,7 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
   const processedContent = useMemo(() => {
     const processObsidianLinks = (content: string) => {
       // First, replace <br> tags with double line breaks for better spacing
-      let processedContent = content.replace(/<br\s*\/?>/gi, '\n\n');
+      let processedContent = content.replace(/<br\s*\/?>/gi, '\n\n&nbsp;\n\n');
       
       // Then, process image links ![[Image.png]] format
       processedContent = processedContent.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
@@ -106,7 +106,7 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         // This is definitely an image since it uses ![[]] syntax
         if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
           const filename = cleanLinkText.replace(/\s+/g, '');
-          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          const apiUrl = process.env.REACT_APP_API_URL || '';
           const encodedFilename = btoa(filename);
           
           return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
@@ -123,7 +123,7 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         // Check if it's an image (has image extension)
         if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
           const filename = cleanLinkText.replace(/\s+/g, '');
-          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          const apiUrl = process.env.REACT_APP_API_URL || '';
           const encodedFilename = btoa(filename);
           
           return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
@@ -144,18 +144,16 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
       const linkText = decodeURIComponent(href.replace('#internal-link-', ''));
       
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+        const apiUrl = process.env.REACT_APP_API_URL || '';
         const response = await fetch(`${apiUrl}/api/lessons/resolve/${encodeURIComponent(linkText)}`);
         const data = await response.json();
         
         if (data.found && onNavigateToLesson) {
           onNavigateToLesson(data.path);
         } else {
-          console.warn('Could not resolve internal link:', linkText);
           // Could show a toast or notification here
         }
       } catch (error) {
-        console.error('Error resolving internal link:', error);
       }
     }
   }, [onNavigateToLesson]);

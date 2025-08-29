@@ -12,7 +12,8 @@
       "Bash(node:*)",
       "Bash(git checkout:*)",
       "Bash(curl:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(set PORT=3001)"
     ],
     "deny": [],
     "ask": []

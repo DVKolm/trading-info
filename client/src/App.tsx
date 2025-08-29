@@ -164,14 +164,12 @@ const App: React.FC = () => {
           
           // Проверяем, не истекла ли подписка (5 минут)
           if (subscriptionData.timestamp && (now - subscriptionData.timestamp) > 5 * 60 * 1000) {
-            console.log('Subscription cache expired, removing from localStorage');
             localStorage.removeItem('telegram_subscription_verified');
             setIsSubscribed(false);
             return;
           }
         } catch (e) {
           // Старый формат данных (просто 'true'), удаляем
-          console.log('Old subscription format detected, removing from localStorage');
           localStorage.removeItem('telegram_subscription_verified');
         }
       }
@@ -179,7 +177,7 @@ const App: React.FC = () => {
       // Если есть сохраненная подписка И есть ID пользователя, проверяем через API
       if (savedSubscriptionData && telegramUserId) {
         try {
-          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          const apiUrl = process.env.REACT_APP_API_URL || '';
           const response = await fetch(`${apiUrl}/api/subscription/status/${telegramUserId}`);
           
           if (response.ok) {
@@ -197,7 +195,6 @@ const App: React.FC = () => {
             } else {
               // Подписка больше не активна, удаляем из localStorage
               localStorage.removeItem('telegram_subscription_verified');
-              console.log('Subscription status changed: user is no longer subscribed');
               setIsSubscribed(false);
               return;
             }
@@ -229,7 +226,7 @@ const App: React.FC = () => {
   const fetchLessonStructure = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       const response = await fetch(`${apiUrl}/api/lessons/structure`);
       if (!response.ok) {
         throw new Error('Failed to fetch lesson structure');
@@ -349,7 +346,7 @@ const App: React.FC = () => {
         return;
       }
       
-      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       const response = await fetch(`${apiUrl}/api/lessons/content/${lessonPath}`);
       if (!response.ok) {
         throw new Error('Failed to fetch lesson content');
@@ -412,7 +409,7 @@ const App: React.FC = () => {
 
   const handleSearch = useCallback(async (query: string): Promise<any[]> => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       const response = await fetch(`${apiUrl}/api/lessons/search?q=${encodeURIComponent(query)}`);
       if (!response.ok) {
         throw new Error('Search failed');
@@ -444,7 +441,7 @@ const App: React.FC = () => {
     const newHistory = lessonHistory.slice(0, -1);
     
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      const apiUrl = process.env.REACT_APP_API_URL || '';
       const response = await fetch(`${apiUrl}/api/lessons/content/${previousLessonPath}`);
       if (!response.ok) {
         throw new Error('Failed to fetch lesson content');
@@ -525,15 +522,13 @@ const App: React.FC = () => {
 
     const preloadTimer = setTimeout(async () => {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+        const apiUrl = process.env.REACT_APP_API_URL || '';
         const response = await fetch(`${apiUrl}/api/lessons/content/${nextLessonPath}`);
         if (response.ok) {
           const lessonData = await response.json();
           lessonCache.set(nextLessonPath, lessonData);
-          console.log('Preloaded next lesson:', nextLessonPath);
         }
       } catch (error) {
-        console.log('Failed to preload next lesson:', error);
       }
     }, 2000); // Preload after 2 seconds of viewing current lesson
 
