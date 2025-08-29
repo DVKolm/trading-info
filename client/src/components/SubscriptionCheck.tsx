@@ -74,6 +74,8 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
     try {
       let telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       
+      console.log('DEBUG: Telegram User ID:', telegramUserId);
+      console.log('DEBUG: Telegram WebApp available:', !!window.Telegram?.WebApp);
       
       if (!telegramUserId) {
         setErrorMessage('Не удалось получить данные пользователя Telegram. Попробуйте перезагрузить приложение.');
@@ -101,6 +103,9 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       }
       
       const result = await response.json();
+      
+      console.log('DEBUG: API Response:', result);
+      console.log('DEBUG: Response status:', response.status);
       
       if (result.verified) {
         // Пользователь подписан
