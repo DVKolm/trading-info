@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [showContinueReading, setShowContinueReading] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [welcomePageReady, setWelcomePageReady] = useState(false);
+  const [welcomeAnimationsEnabled, setWelcomeAnimationsEnabled] = useState(false);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -211,9 +212,13 @@ const App: React.FC = () => {
       // Добавляем небольшую задержку для предзагрузки welcome page
       setTimeout(() => {
         setWelcomePageReady(true);
-        // Ещё небольшая задержка перед скрытием loading screen
+        // Ещё небольшая задержка перед скрытием loading screen и включением анимаций
         setTimeout(() => {
           setLoading(false);
+          // Включаем анимации только после того, как loading исчез
+          setTimeout(() => {
+            setWelcomeAnimationsEnabled(true);
+          }, 100);
         }, 300);
       }, 500);
     } catch (err) {
@@ -603,7 +608,7 @@ const App: React.FC = () => {
         {/* Скрытая предзагрузка welcome page */}
         {welcomePageReady && (
           <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0 }}>
-            <div className="welcome-screen">
+            <div className={`welcome-screen ${welcomeAnimationsEnabled ? '' : 'no-animations'}`}>
               <h1>Добро пожаловать в H.E.A.R.T!</h1>
               <p>Ваш надежный проводник в мире трейдинга</p>
             </div>
@@ -670,7 +675,7 @@ const App: React.FC = () => {
             nextLessonPath={nextLessonPath}
           />
         ) : (
-          <div className="welcome-screen">
+          <div className={`welcome-screen ${welcomeAnimationsEnabled ? '' : 'no-animations'}`}>
             {/* Global Continue Reading Panel */}
             {showContinueReading && lastReadLesson && (
               <div className="global-continue-reading">

@@ -458,6 +458,16 @@ code {
   animation: gradient-background 15s ease infinite;
 }
 
+/* Отключение анимаций до готовности */
+.welcome-screen.no-animations {
+  animation: none !important;
+}
+
+.welcome-screen.no-animations::before,
+.welcome-screen.no-animations::after {
+  animation: none !important;
+}
+
 .welcome-screen::before {
   content: '';
   position: absolute;
