@@ -14,7 +14,12 @@
       "Bash(curl:*)",
       "Bash(move:*)",
       "Bash(set PORT=3001)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(PORT=3001 npm start)",
+      "Bash(PORT=3000 node server.js)",
+      "Bash(PORT=3002 npm start)",
+      "Bash(PORT=3003 npm start)",
+      "Bash(PORT=3004 npm start)"
     ],
     "deny": [],
     "ask": []

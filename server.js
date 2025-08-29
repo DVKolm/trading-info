@@ -156,11 +156,6 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
     }
 });
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname+'/client/build/index.html'));
-});
 
 // GET route for images - search by filename in all lesson directories  
 app.get('/api/image/:encodedPath', async (req, res) => {

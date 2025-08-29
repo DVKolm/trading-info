@@ -1083,12 +1083,12 @@ code {
   right: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
   opacity: 0;
   visibility: hidden;
   transform: scale(0.8) translateY(20px);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 1001;
+  align-items: center;
 }
 
 .fab-actions.visible {
@@ -1111,6 +1111,7 @@ code {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
   position: relative;
+  margin-bottom: 20px;
 }
 
 .fab-action:hover {
@@ -1120,25 +1121,65 @@ code {
 }
 
 .fab-action.theme-toggle {
-  background: var(--warning-color);
-  color: white;
-  border-color: var(--warning-color);
+  transition: all 0.2s ease;
+  margin-bottom: 24px;
 }
 
-.fab-action.theme-toggle:hover {
-  background: #e09900;
+/* Light theme - show moon (white) */
+[data-theme="light"] .fab-action.theme-toggle {
+  background: white;
+  color: #1a1a1a;
+  border-color: #e5e5e5;
+}
+
+[data-theme="light"] .fab-action.theme-toggle:hover {
+  background: #f5f5f5;
   transform: scale(1.05);
+  border-color: var(--accent-primary);
+}
+
+/* Dark theme - show sun (black) */
+[data-theme="dark"] .fab-action.theme-toggle {
+  background: #1a1a1a;
+  color: white;
+  border-color: #333;
+}
+
+[data-theme="dark"] .fab-action.theme-toggle:hover {
+  background: #333;
+  transform: scale(1.05);
+  border-color: var(--accent-primary);
 }
 
 .fab-action.profile-button {
-  background: var(--success-color);
-  color: white;
-  border-color: var(--success-color);
+  transition: all 0.2s ease;
+  margin-bottom: 0;
 }
 
-.fab-action.profile-button:hover {
-  background: #22c55e;
+/* Light theme - profile button */
+[data-theme="light"] .fab-action.profile-button {
+  background: #f8f9fa;
+  color: #1a1a1a;
+  border-color: #e9ecef;
+}
+
+[data-theme="light"] .fab-action.profile-button:hover {
+  background: #e9ecef;
   transform: scale(1.05);
+  border-color: var(--accent-primary);
+}
+
+/* Dark theme - profile button */
+[data-theme="dark"] .fab-action.profile-button {
+  background: #2a2a2a;
+  color: white;
+  border-color: #404040;
+}
+
+[data-theme="dark"] .fab-action.profile-button:hover {
+  background: #404040;
+  transform: scale(1.05);
+  border-color: var(--accent-primary);
 }
 
 .fab-overlay {
@@ -1311,6 +1352,15 @@ code {
   .fab-action {
     width: 40px;
     height: 40px;
+    margin-bottom: 16px;
+  }
+  
+  .fab-action.theme-toggle {
+    margin-bottom: 20px;
+  }
+  
+  .fab-action.profile-button {
+    margin-bottom: 0;
   }
   
   .user-profile-modal {
@@ -1707,49 +1757,7 @@ td {
   }
 }
 
-/* Theme Toggle */
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.theme-toggle:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--border-hover);
-  transform: scale(1.05);
-}
-
-.theme-toggle svg {
-  color: var(--text-primary);
-  transition: color 0.2s ease;
-}
-
-@media (max-width: 768px) {
-  .theme-toggle {
-    top: 0.75rem;
-    right: 0.75rem;
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-  
-  .theme-toggle svg {
-    width: 14px;
-    height: 14px;
-  }
-}
+/* Theme Toggle - REMOVED: Now only used in FloatingActionButton */
 
 /* Continue Reading Panel */
 .continue-reading-panel {
