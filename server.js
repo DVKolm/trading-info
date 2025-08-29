@@ -103,8 +103,12 @@ marked.setOptions({
 
 // Function to detect and fix encoding issues in ZIP entry names using raw bytes
 function fixEncodingIssues(entryName, rawBytes = null) {
-    // If we have raw bytes, try to decode them properly
-    if (rawBytes) {
+    // First check if the entry name already looks correct (contains proper Russian characters)
+    const hasProperRussian = /[А-Яа-яЁё]/.test(entryName);
+    const hasCorruption = /[�����������������������������]/.test(entryName) || /[\u0B80-\u0BFF]/.test(entryName);
+    
+    // If we have raw bytes and the entry name appears corrupted, try to decode from raw bytes
+    if (rawBytes && (hasCorruption || !hasProperRussian)) {
         try {
             // Try different encodings commonly used for Russian text
             const encodingsToTry = ['cp866', 'windows-1251', 'koi8-r', 'iso-8859-5'];
@@ -112,9 +116,9 @@ function fixEncodingIssues(entryName, rawBytes = null) {
             for (const encoding of encodingsToTry) {
                 try {
                     const decoded = iconv.decode(Buffer.from(rawBytes), encoding);
-                    // Check if the decoded text contains valid Russian characters
-                    if (/[А-Яа-яЁё]/.test(decoded) && !/�/.test(decoded)) {
-                        logger.info('Successfully decoded entry name', {
+                    // Check if the decoded text contains valid Russian characters and is better than original
+                    if (/[А-Яа-яЁё]/.test(decoded) && !/�/.test(decoded) && decoded !== entryName) {
+                        logger.info('Successfully decoded entry name from raw bytes', {
                             original: entryName,
                             fixed: decoded,
                             encoding: encoding
@@ -130,8 +134,13 @@ function fixEncodingIssues(entryName, rawBytes = null) {
         }
     }
     
+    // If the filename already has proper Russian characters and no corruption, return as-is
+    if (hasProperRussian && !hasCorruption) {
+        return entryName;
+    }
+    
     // Fallback: try to fix already corrupted Unicode strings
-    if (/[�����������������������������]/.test(entryName) || /[\u0B80-\u0BFF]/.test(entryName)) {
+    if (hasCorruption) {
         try {
             // Try to decode the string as if it was incorrectly interpreted
             const bytes = [];
@@ -198,17 +207,12 @@ async function extractZipWithProperEncoding(zip, targetDir) {
     
     for (const entry of entries) {
         try {
-            // Try to get raw bytes of the entry name for proper encoding detection
+            // Get raw bytes of the entry name from the ZIP entry
             let rawBytes = null;
             try {
-                // Access the internal header to get raw filename bytes
-                if (entry.header && entry.header.fileNameLength > 0) {
-                    // The raw filename is stored in the header
-                    const headerBuffer = entry.getCompressedDataFromZip();
-                    if (headerBuffer && entry.header.fileNameLength) {
-                        // Extract filename bytes from ZIP central directory
-                        rawBytes = entry.rawEntryName || null;
-                    }
+                // Access the raw filename bytes directly from the entry
+                if (entry.rawEntryName && Buffer.isBuffer(entry.rawEntryName)) {
+                    rawBytes = Array.from(entry.rawEntryName);
                 }
             } catch (rawError) {
                 logger.debug('Could not access raw entry name bytes', { 
@@ -217,8 +221,13 @@ async function extractZipWithProperEncoding(zip, targetDir) {
                 });
             }
             
-            // Fix encoding issues in the entry name
-            const fixedEntryName = fixEncodingIssues(entry.entryName, rawBytes);
+            // Fix encoding issues in the entry name using raw bytes
+            let fixedEntryName = fixEncodingIssues(entry.entryName, rawBytes);
+            
+            // Apply additional server-side text correction as recommended
+            fixedEntryName = fixCorruptedRussianTextServer(fixedEntryName);
+            
+            // Use the fixed name for creating the entry path
             const entryPath = path.join(targetDir, fixedEntryName);
             
             // Ensure the directory structure exists
