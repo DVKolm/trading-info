@@ -24,7 +24,9 @@
       "Bash(PORT=3005 npm start)",
       "Bash(del \"C:\\Users\\IVA-PC\\WebstormProjects\\trading-info\\client\\src\\components\\LessonContinueNotification.tsx\")",
       "Bash(PORT=3006 npm start)",
-      "Bash(PORT=3007 npm start)"
+      "Bash(PORT=3007 npm start)",
+      "Bash(PORT=3008 node server.js)",
+      "Bash(REACT_APP_API_URL=http://localhost:3008 PORT=3009 npm start)"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
-import { ChevronRight, ChevronDown, Search, Menu, X, File, Folder, BookOpen } from 'lucide-react';
+import { ChevronRight, ChevronDown, Search, Menu, X, File, Folder } from 'lucide-react';
 import { LessonStructure, SearchResult } from '../types';
 
 interface SidebarProps {
@@ -101,47 +101,9 @@ const Sidebar: React.FC<SidebarProps> = memo(({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [continueReadingLesson, setContinueReadingLesson] = useState<{path: string, title: string} | null>(null);
 
   // Memoize the structure rendering to avoid unnecessary re-renders
   const memoizedStructure = useMemo(() => structure, [structure]);
-
-  // Check for lesson that can be continued reading
-  useEffect(() => {
-    const checkForContinueReading = () => {
-      try {
-        const allKeys = Object.keys(localStorage).filter(key => key.startsWith('lesson_progress_'));
-        let mostRecentLesson: {path: string, title: string, lastVisited: number} | null = null;
-        
-        allKeys.forEach(key => {
-          try {
-            const data = JSON.parse(localStorage.getItem(key) || '{}');
-            if (data.timeSpent && data.timeSpent >= 15000 && data.scrollProgress < 0.9 && data.lastVisited) {
-              if (!mostRecentLesson || data.lastVisited > mostRecentLesson.lastVisited) {
-                const lessonPath = key.replace('lesson_progress_', '');
-                const pathParts = lessonPath.split('/');
-                const lessonTitle = pathParts[pathParts.length - 1].replace('.md', '');
-                
-                mostRecentLesson = {
-                  path: lessonPath,
-                  title: lessonTitle,
-                  lastVisited: data.lastVisited
-                };
-              }
-            }
-          } catch (e) {
-            console.error('Failed to parse lesson progress:', e);
-          }
-        });
-
-        setContinueReadingLesson(mostRecentLesson);
-      } catch (e) {
-        console.error('Error checking continue reading:', e);
-      }
-    };
-
-    checkForContinueReading();
-  }, [isOpen]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -277,25 +239,6 @@ const Sidebar: React.FC<SidebarProps> = memo(({
         </div>
 
         <div className="sidebar-content">
-          {continueReadingLesson && !searchQuery.trim() && (
-            <div className="continue-reading-notification">
-              <div className="continue-reading-header">
-                <BookOpen size={16} />
-                <span>Продолжить чтение</span>
-              </div>
-              <div 
-                className="continue-reading-lesson"
-                onClick={() => {
-                  onLessonSelect(continueReadingLesson.path);
-                  setContinueReadingLesson(null);
-                }}
-              >
-                <span className="continue-lesson-title">{continueReadingLesson.title}</span>
-                <span className="continue-lesson-subtitle">Нажмите, чтобы продолжить</span>
-              </div>
-            </div>
-          )}
-          
           {searchQuery.trim() ? (
             <div className="search-results">
               {renderSearchResults()}

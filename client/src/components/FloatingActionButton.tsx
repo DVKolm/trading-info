@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, User, Sun, Moon, X, Shield, Upload, Home } from 'lucide-react';
+import { Settings, User, Sun, Moon, X, Upload, Home } from 'lucide-react';
 
 interface FloatingActionButtonProps {
   theme: 'light' | 'dark';

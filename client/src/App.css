@@ -466,63 +466,6 @@ code {
   z-index: 999;
 }
 
-/* Continue Reading Notification */
-.continue-reading-notification {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: 8px;
-  margin: 0.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.continue-reading-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem 0.5rem 1rem;
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.9;
-}
-
-.continue-reading-header svg {
-  width: 16px;
-  height: 16px;
-}
-
-.continue-reading-lesson {
-  padding: 0.5rem 1rem 1rem 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.continue-reading-lesson:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.continue-lesson-title {
-  display: block;
-  color: white;
-  font-weight: 500;
-  font-size: 14px;
-  margin-bottom: 0.25rem;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.continue-lesson-subtitle {
-  display: block;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
-  font-weight: 400;
-}
 
 /* Main Content */
 .main-content {
@@ -1211,7 +1154,6 @@ code {
 
 .fab-action.theme-toggle {
   transition: all 0.2s ease;
-  margin-bottom: 20px;
 }
 
 /* Light theme - theme toggle button */
@@ -1242,62 +1184,60 @@ code {
 
 .fab-action.profile-button {
   transition: all 0.2s ease;
-  margin-bottom: 20px;
 }
 
 /* Light theme - profile button */
 [data-theme="light"] .fab-action.profile-button {
-  background: #f8f9fa;
-  color: #1a1a1a;
-  border-color: #e9ecef;
+  background: #4f46e5;
+  color: white;
+  border-color: #4338ca;
 }
 
 [data-theme="light"] .fab-action.profile-button:hover {
-  background: #e9ecef;
+  background: #4338ca;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
 
 /* Dark theme - profile button */
 [data-theme="dark"] .fab-action.profile-button {
-  background: #2a2a2a;
+  background: #6366f1;
   color: white;
-  border-color: #404040;
+  border-color: #4f46e5;
 }
 
 [data-theme="dark"] .fab-action.profile-button:hover {
-  background: #404040;
+  background: #4f46e5;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
 
 .fab-action.home-button {
   transition: all 0.2s ease;
-  margin-bottom: 20px;
 }
 
 /* Light theme - home button */
 [data-theme="light"] .fab-action.home-button {
-  background: #4ade80;
+  background: #4f46e5;
   color: white;
-  border-color: #22c55e;
+  border-color: #4338ca;
 }
 
 [data-theme="light"] .fab-action.home-button:hover {
-  background: #22c55e;
+  background: #4338ca;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
 
 /* Dark theme - home button */
 [data-theme="dark"] .fab-action.home-button {
-  background: #4ade80;
+  background: #6366f1;
   color: white;
-  border-color: #22c55e;
+  border-color: #4f46e5;
 }
 
 [data-theme="dark"] .fab-action.home-button:hover {
-  background: #22c55e;
+  background: #4f46e5;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
@@ -1308,26 +1248,26 @@ code {
 
 /* Light theme - admin button */
 [data-theme="light"] .fab-action.admin-button {
-  background: #ff6b6b;
+  background: #4f46e5;
   color: white;
-  border-color: #ff5252;
+  border-color: #4338ca;
 }
 
 [data-theme="light"] .fab-action.admin-button:hover {
-  background: #ff5252;
+  background: #4338ca;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
 
 /* Dark theme - admin button */
 [data-theme="dark"] .fab-action.admin-button {
-  background: #ff4757;
+  background: #6366f1;
   color: white;
-  border-color: #ff3742;
+  border-color: #4f46e5;
 }
 
 [data-theme="dark"] .fab-action.admin-button:hover {
-  background: #ff3742;
+  background: #4f46e5;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
