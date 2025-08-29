@@ -22,6 +22,24 @@
   --code-bg: #2f3136;
 }
 
+/* Light Theme */
+[data-theme="light"] {
+  --bg-primary: #d7d7d7;
+  --bg-secondary: #e8e8e8;
+  --bg-tertiary: #f2f2f2;
+  --text-primary: #1a1a1a;
+  --text-secondary: #2d2d2d;
+  --text-muted: #666666;
+  --accent-primary: #6c2bd9;
+  --accent-secondary: #8b5cf6;
+  --border-color: #b8b8b8;
+  --border-hover: #7c3aed;
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --code-bg: #f8f9fa;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -1050,6 +1068,50 @@ td {
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-hover);
+  transform: scale(1.05);
+}
+
+.theme-toggle svg {
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  
+  .theme-toggle svg {
+    width: 14px;
+    height: 14px;
   }
 }
 

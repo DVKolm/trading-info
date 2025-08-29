@@ -3,6 +3,7 @@ import { WebApp } from '@twa-dev/types';
 import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
 import SubscriptionCheck from './components/SubscriptionCheck';
+import ThemeToggle from './components/ThemeToggle';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
 
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   const [scrollPositions, setScrollPositions] = useState<Map<string, number>>(new Map());
   const [lastReadLesson, setLastReadLesson] = useState<{path: string, title: string, timestamp: number, scrollPosition: number} | null>(null);
   const [showContinueReading, setShowContinueReading] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -55,6 +57,7 @@ const App: React.FC = () => {
     fetchLessonStructure();
     checkSubscriptionStatus();
     loadLastReadLesson();
+    loadTheme();
   }, []);
 
   // Set up scroll tracking when lesson changes
@@ -417,6 +420,31 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
     setShowContinueReading(false);
   };
 
+  const loadTheme = () => {
+    try {
+      const savedTheme = localStorage.getItem('app_theme') as 'light' | 'dark';
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        setTheme(savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else {
+        // Default to dark theme
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (error) {
+      console.error('Error loading theme:', error);
+    }
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    try {
+      localStorage.setItem('app_theme', newTheme);
+    } catch (error) {
+      console.error('Error saving theme:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -456,6 +484,7 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
 
   return (
     <div className="app">
+      <ThemeToggle theme={theme} onThemeChange={handleThemeChange} />
       <Sidebar
         structure={lessonStructure}
         isOpen={sidebarOpen}
