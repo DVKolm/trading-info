@@ -96,8 +96,11 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
   // Memoized process Obsidian-style internal links [[Link Name]] and images
   const processedContent = useMemo(() => {
     const processObsidianLinks = (content: string) => {
-      // First, process image links ![[Image.png]] format
-      let processedContent = content.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
+      // First, replace <br> tags with double line breaks for better spacing
+      let processedContent = content.replace(/<br\s*\/?>/gi, '\n\n');
+      
+      // Then, process image links ![[Image.png]] format
+      processedContent = processedContent.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
         const cleanLinkText = linkText.trim();
         
         // This is definitely an image since it uses ![[]] syntax

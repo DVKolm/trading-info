@@ -78,21 +78,14 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       console.log('Telegram WebApp data:', window.Telegram?.WebApp?.initDataUnsafe); // Debug
       
       if (!telegramUserId) {
-        // В режиме разработки - для тестирования (временно отключено)
-        if (false && process.env.NODE_ENV === 'development') {
-          console.log('Development mode: simulating subscription verification');
-          const subscriptionData = {
-            verified: true,
-            timestamp: Date.now()
-          };
-          localStorage.setItem('telegram_subscription_verified', JSON.stringify(subscriptionData));
-          setStep('verified');
-          onSubscriptionVerified();
+        // В режиме разработки используем тестовый ID
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Development mode: using test user ID');
+          telegramUserId = 123456789; // Тестовый ID для разработки
+        } else {
+          setErrorMessage('Не удалось получить данные пользователя Telegram. Попробуйте перезагрузить приложение.');
           return;
         }
-        
-        setErrorMessage('Не удалось получить данные пользователя Telegram. Попробуйте перезагрузить приложение.');
-        return;
       }
       
       // Отправляем запрос на сервер для проверки подписки
@@ -100,8 +93,7 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       console.log('API URL:', apiUrl); // Debug
       
       const requestBody = {
-        telegram_user_id: telegramUserId,
-        verified: true
+        telegram_user_id: telegramUserId
       };
       console.log('Request body:', requestBody); // Debug
       
@@ -151,18 +143,8 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       console.error('Subscription verification failed:', error);
       localStorage.removeItem('telegram_subscription_verified');
       
-      // В режиме разработки - для тестирования (временно отключено)
-      if (false && process.env.NODE_ENV === 'development') {
-        console.log('Development mode: API error, simulating successful verification for testing');
-        const subscriptionData = {
-          verified: true,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('telegram_subscription_verified', JSON.stringify(subscriptionData));
-        setStep('verified');
-        onSubscriptionVerified();
-        return;
-      }
+      // В режиме разработки показываем реальную ошибку
+      console.log('Subscription verification failed - this is expected if server is not running');
       
       setErrorMessage('Произошла ошибка при проверке подписки. Проверьте подключение к интернету и попробуйте снова.');
       setStep('initial');

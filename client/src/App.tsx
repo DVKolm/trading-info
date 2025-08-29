@@ -631,7 +631,7 @@ const App: React.FC = () => {
     return (
       <>
         <div className="loading-container">
-          <div className="loading-spinner">Loading lessons...</div>
+          <div className="loading-text">Loading lessons...</div>
         </div>
         {/* Скрытая предзагрузка welcome page */}
         {welcomePageReady && (

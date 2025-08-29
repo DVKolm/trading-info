@@ -91,15 +91,30 @@ code {
   background-color: var(--bg-primary);
 }
 
-.loading-spinner {
+.loading-text {
   color: var(--text-secondary);
   font-size: 16px;
   animation: pulse 2s infinite;
 }
 
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff40;
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Error States */
@@ -824,7 +839,9 @@ code {
 }
 
 .lesson-br {
-  line-height: 2;
+  display: block;
+  margin: 1rem 0;
+  height: 1rem;
 }
 
 .lesson-em {
