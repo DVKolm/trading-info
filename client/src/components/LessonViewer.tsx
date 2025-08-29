@@ -6,7 +6,6 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Clock, CheckCircle, TrendingUp, Eye } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
-import LessonContinueNotification from './LessonContinueNotification';
 
 interface LessonViewerProps {
   lesson: Lesson;
@@ -96,62 +95,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
   const { currentSession, metrics, isActive, handleScroll, markAsComplete } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
-  const [showContinueNotification, setShowContinueNotification] = useState(false);
-  const [hasShownNotification, setHasShownNotification] = useState(false);
 
-  // Check for previous progress and show continuation notification
-  useEffect(() => {
-    if (!hasShownNotification && lesson) {
-      // Small delay to let the lesson load first
-      const timer = setTimeout(() => {
-        // Check if there's previous progress for this lesson
-        const lessonKey = `lesson_progress_${lesson.path}`;
-        const savedProgress = localStorage.getItem(lessonKey);
-        
-        console.log('Checking for saved progress:', { lessonKey, savedProgress: !!savedProgress });
-        
-        if (savedProgress) {
-          try {
-            const progressData = JSON.parse(savedProgress);
-            console.log('Progress data:', progressData);
-            // Show notification if there's meaningful progress (more than 5% read or some time spent)
-            if (progressData.scrollPosition > 0.05 || progressData.timeSpent > 10000) {
-              console.log('Showing continue notification');
-              setShowContinueNotification(true);
-            } else {
-              console.log('Progress too small:', { scrollPosition: progressData.scrollPosition, timeSpent: progressData.timeSpent });
-            }
-          } catch (error) {
-            console.error('Error parsing progress data:', error);
-          }
-        }
-        setHasShownNotification(true);
-      }, 1000); // Show notification after 1 second
-
-      return () => clearTimeout(timer);
-    }
-  }, [lesson, hasShownNotification]);
-
-  // Notification handlers
-  const handleContinueReading = useCallback(() => {
-    setShowContinueNotification(false);
-    // Restore scroll position if available
-    const lessonKey = `lesson_progress_${lesson.path}`;
-    const savedProgress = localStorage.getItem(lessonKey);
-    if (savedProgress && lessonViewerRef.current) {
-      try {
-        const progressData = JSON.parse(savedProgress);
-        const scrollPosition = progressData.scrollPosition * lessonViewerRef.current.scrollHeight;
-        lessonViewerRef.current.scrollTop = scrollPosition;
-      } catch (error) {
-        // Ignore parsing errors
-      }
-    }
-  }, [lesson.path]);
-
-  const handleDismissNotification = useCallback(() => {
-    setShowContinueNotification(false);
-  }, []);
 
   // Memoized process Obsidian-style internal links [[Link Name]] and images
   const processedContent = useMemo(() => {
@@ -424,13 +368,6 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         )}
       </div>
 
-      {/* Lesson Continue Notification */}
-      <LessonContinueNotification
-        isVisible={showContinueNotification}
-        onContinue={handleContinueReading}
-        onDismiss={handleDismissNotification}
-        lessonTitle={lesson.frontmatter?.title || lesson.path.split('/').pop()?.replace('.md', '') || 'Урок'}
-      />
     </div>
   );
 });

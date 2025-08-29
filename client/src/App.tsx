@@ -600,6 +600,24 @@ const App: React.FC = () => {
     }
   };
 
+  const handleHomeClick = () => {
+    // Save current lesson's scroll position if exists
+    if (selectedLesson) {
+      saveScrollPosition(selectedLesson.path);
+    }
+    
+    // Clear selected lesson to show welcome page
+    setSelectedLesson(null);
+    
+    // Close sidebar on mobile
+    setSidebarOpen(false);
+    
+    // Scroll to top
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 50);
+  };
+
   if (loading) {
     return (
       <>
@@ -666,6 +684,7 @@ const App: React.FC = () => {
         theme={theme}
         onThemeChange={handleThemeChange}
         onProfileClick={() => setShowUserProfile(true)}
+        onHomeClick={handleHomeClick}
         isAdmin={!!isAdmin}
         onAdminClick={() => setShowAdminPage(true)}
         onUploadClick={() => {

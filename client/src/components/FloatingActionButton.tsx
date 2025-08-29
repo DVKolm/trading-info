@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, User, Sun, Moon, X, Shield, Upload } from 'lucide-react';
+import { Settings, User, Sun, Moon, X, Shield, Upload, Home } from 'lucide-react';
 
 interface FloatingActionButtonProps {
   theme: 'light' | 'dark';
   onThemeChange: (theme: 'light' | 'dark') => void;
   onProfileClick: () => void;
+  onHomeClick: () => void;
   isAdmin?: boolean;
   onAdminClick?: () => void;
   onUploadClick?: () => void;
@@ -14,6 +15,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   theme, 
   onThemeChange, 
   onProfileClick,
+  onHomeClick,
   isAdmin,
   onAdminClick,
   onUploadClick 
@@ -67,10 +69,23 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     }
   };
 
+  const handleHomeClick = () => {
+    onHomeClick();
+    setIsOpen(false);
+  };
+
   return (
     <div className={`floating-action-button ${isOpen ? 'open' : ''}`} ref={fabRef}>
       {/* Action Buttons */}
       <div className={`fab-actions ${isOpen ? 'visible' : ''}`}>
+        <button 
+          className="fab-action home-button"
+          onClick={handleHomeClick}
+          title="Домой"
+        >
+          <Home size={20} />
+        </button>
+        
         <button 
           className="fab-action theme-toggle"
           onClick={handleThemeToggle}
