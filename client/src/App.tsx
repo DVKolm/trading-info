@@ -68,6 +68,7 @@ const App: React.FC = () => {
   const [lastReadLesson, setLastReadLesson] = useState<{path: string, title: string, timestamp: number, scrollPosition: number} | null>(null);
   const [showContinueReading, setShowContinueReading] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [welcomePageReady, setWelcomePageReady] = useState(false);
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -206,9 +207,17 @@ const App: React.FC = () => {
       }
       const data = await response.json();
       setLessonStructure(data.structure);
+      
+      // Добавляем небольшую задержку для предзагрузки welcome page
+      setTimeout(() => {
+        setWelcomePageReady(true);
+        // Ещё небольшая задержка перед скрытием loading screen
+        setTimeout(() => {
+          setLoading(false);
+        }, 300);
+      }, 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
       setLoading(false);
     }
   };
@@ -587,9 +596,20 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">Loading lessons...</div>
-      </div>
+      <>
+        <div className="loading-container">
+          <div className="loading-spinner">Loading lessons...</div>
+        </div>
+        {/* Скрытая предзагрузка welcome page */}
+        {welcomePageReady && (
+          <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0 }}>
+            <div className="welcome-screen">
+              <h1>Добро пожаловать в H.E.A.R.T!</h1>
+              <p>Ваш надежный проводник в мире трейдинга</p>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
