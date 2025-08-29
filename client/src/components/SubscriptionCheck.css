@@ -295,6 +295,8 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  animation: none !important;
+  transform: none !important;
 }
 
 .verify-button:hover:not(:disabled) {
