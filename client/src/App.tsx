@@ -699,6 +699,10 @@ const App: React.FC = () => {
         onProfileClick={() => setShowUserProfile(true)}
         isAdmin={!!isAdmin}
         onAdminClick={() => setShowAdminPage(true)}
+        onUploadClick={() => {
+          // TODO: Implement file upload functionality
+          console.log('Upload clicked');
+        }}
       />
       
       {showUserProfile && (

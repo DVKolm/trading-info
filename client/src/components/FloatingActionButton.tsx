@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, User, Sun, Moon, X, Shield } from 'lucide-react';
+import { Settings, User, Sun, Moon, X, Shield, Upload } from 'lucide-react';
 
 interface FloatingActionButtonProps {
   theme: 'light' | 'dark';
@@ -7,6 +7,7 @@ interface FloatingActionButtonProps {
   onProfileClick: () => void;
   isAdmin?: boolean;
   onAdminClick?: () => void;
+  onUploadClick?: () => void;
 }
 
 const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ 
@@ -14,7 +15,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   onThemeChange, 
   onProfileClick,
   isAdmin,
-  onAdminClick 
+  onAdminClick,
+  onUploadClick 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,13 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     }
   };
 
+  const handleUploadClick = () => {
+    if (onUploadClick) {
+      onUploadClick();
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div className={`floating-action-button ${isOpen ? 'open' : ''}`} ref={fabRef}>
       {/* Action Buttons */}
@@ -87,6 +96,14 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
             <Shield size={20} />
           </button>
         )}
+        
+        <button 
+          className="fab-action upload-button"
+          onClick={handleUploadClick}
+          title="Upload Files"
+        >
+          <Upload size={20} />
+        </button>
       </div>
 
       {/* Main FAB Button */}
