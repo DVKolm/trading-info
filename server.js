@@ -176,12 +176,13 @@ app.post('/api/lesson-image', express.json(), async (req, res) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
-    const { initData } = req.body;
+    const { initData, targetFolder } = req.body;
 
     logger.info('Upload lesson attempt', { 
       filename: req.file?.originalname,
       hasInitData: !!initData,
-      fileSize: req.file?.size
+      fileSize: req.file?.size,
+      targetFolder
     });
 
     if (!initData) {
@@ -223,27 +224,31 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
 
             const lessonName = path.basename(mdFileEntry.entryName, '.md');
 
-            // Default to intermediate level folder for zip uploads
-            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
+            // Use selected folder or default to intermediate level
+            const targetDir = targetFolder ? 
+                path.join(LESSONS_DIR, targetFolder) : 
+                path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
             
-            // Ensure intermediate level directory exists
-            await fs.ensureDir(intermediateLevelDir);
+            // Ensure target directory exists
+            await fs.ensureDir(targetDir);
             
-            // Extract directly to intermediate level folder
+            // Extract directly to target folder
             // The zip should contain a folder with the lesson files
-            zip.extractAllTo(intermediateLevelDir, true);
+            zip.extractAllTo(targetDir, true);
 
         } else if (path.extname(originalName) === '.md') {
             const lessonName = path.basename(originalName, '.md');
 
-            // Default to intermediate level folder for .md uploads
-            const intermediateLevelDir = path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
+            // Use selected folder or default to intermediate level
+            const targetDir = targetFolder ? 
+                path.join(LESSONS_DIR, targetFolder) : 
+                path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
             
-            // Ensure intermediate level directory exists
-            await fs.ensureDir(intermediateLevelDir);
+            // Ensure target directory exists
+            await fs.ensureDir(targetDir);
             
             // Create a subfolder for the lesson
-            const lessonDir = path.join(intermediateLevelDir, lessonName);
+            const lessonDir = path.join(targetDir, lessonName);
             await fs.ensureDir(lessonDir);
 
             await fs.writeFile(path.join(lessonDir, originalName), fileBuffer);
@@ -485,24 +490,27 @@ async function scanLessonsDirectory(dirPath, relativePath = '') {
   const items = [];
   
   try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dirPath, { withFileTypes: true, encoding: 'utf8' });
     
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       const itemRelativePath = path.join(relativePath, entry.name);
       
+      // Ensure proper UTF-8 handling for Russian text
+      const safeName = Buffer.from(entry.name, 'utf8').toString('utf8');
+      
       if (entry.isDirectory()) {
         const children = await scanLessonsDirectory(fullPath, itemRelativePath);
         items.push({
           id: itemRelativePath.replace(/\\/g, '/'),
-          name: entry.name,
+          name: safeName,
           type: 'folder',
           path: itemRelativePath.replace(/\\/g, '/'),
           children: children
         });
       } else if (entry.name.endsWith('.md')) {
         // Read markdown file to extract title from frontmatter or first heading
-        let title = entry.name.replace('.md', '');
+        let title = safeName.replace('.md', '');
         try {
           const content = await fs.readFile(fullPath, 'utf8');
           const parsed = matter(content);
@@ -525,7 +533,7 @@ async function scanLessonsDirectory(dirPath, relativePath = '') {
           name: title,
           type: 'file',
           path: itemRelativePath.replace(/\\/g, '/'),
-          filename: entry.name
+          filename: safeName
         });
       }
     }
@@ -566,6 +574,45 @@ async function scanLessonsDirectory(dirPath, relativePath = '') {
 }
 
 // API Routes
+
+// Get lesson folders for upload
+app.get('/api/lessons/folders', async (req, res) => {
+  try {
+    logger.info('Getting lesson folders for upload');
+    
+    // Ensure lessons directory exists
+    await fs.ensureDir(LESSONS_DIR);
+    
+    const folders = [];
+    const entries = await fs.readdir(LESSONS_DIR, { withFileTypes: true, encoding: 'utf8' });
+    
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        // Ensure proper UTF-8 handling for Russian text
+        const safeName = Buffer.from(entry.name, 'utf8').toString('utf8');
+        folders.push({
+          name: safeName,
+          path: entry.name
+        });
+      }
+    }
+    
+    // Sort folders
+    folders.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    
+    logger.info('Lesson folders retrieved successfully', {
+      folderCount: folders.length
+    });
+    
+    res.json({ folders });
+  } catch (error) {
+    logger.error('Error getting lesson folders', {
+      error: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ error: 'Failed to get lesson folders' });
+  }
+});
 
 // Get lessons structure
 app.get('/api/lessons/structure', async (req, res) => {

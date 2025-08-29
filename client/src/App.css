@@ -921,6 +921,14 @@ code {
   font-weight: 500;
 }
 
+.stat-description {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  line-height: 1.3;
+  font-style: italic;
+}
+
 .stat-progress {
   background: var(--bg-primary);
   height: 4px;
@@ -1148,28 +1156,28 @@ code {
   margin-bottom: 20px;
 }
 
-/* Light theme - show moon (white) */
+/* Light theme - theme toggle button */
 [data-theme="light"] .fab-action.theme-toggle {
-  background: white;
-  color: #1a1a1a;
-  border-color: #e5e5e5;
+  background: #4f46e5;
+  color: white;
+  border-color: #4338ca;
 }
 
 [data-theme="light"] .fab-action.theme-toggle:hover {
-  background: #f5f5f5;
+  background: #4338ca;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
 
-/* Dark theme - show sun (black) */
+/* Dark theme - theme toggle button */
 [data-theme="dark"] .fab-action.theme-toggle {
-  background: #1a1a1a;
+  background: #6366f1;
   color: white;
-  border-color: #333;
+  border-color: #4f46e5;
 }
 
 [data-theme="dark"] .fab-action.theme-toggle:hover {
-  background: #333;
+  background: #4f46e5;
   transform: scale(1.05);
   border-color: var(--accent-primary);
 }
@@ -2075,6 +2083,40 @@ td {
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
+}
+
+.folder-selection-container {
+  margin-bottom: 20px;
+}
+
+.folder-select-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.folder-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.folder-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.folder-select:hover {
+  border-color: var(--accent-primary);
 }
 
 .file-input-container {

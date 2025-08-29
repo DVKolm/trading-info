@@ -108,15 +108,21 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         const lessonKey = `lesson_progress_${lesson.path}`;
         const savedProgress = localStorage.getItem(lessonKey);
         
+        console.log('Checking for saved progress:', { lessonKey, savedProgress: !!savedProgress });
+        
         if (savedProgress) {
           try {
             const progressData = JSON.parse(savedProgress);
-            // Show notification if there's meaningful progress (more than 10% read or some time spent)
-            if (progressData.scrollPosition > 0.1 || progressData.timeSpent > 30000) {
+            console.log('Progress data:', progressData);
+            // Show notification if there's meaningful progress (more than 5% read or some time spent)
+            if (progressData.scrollPosition > 0.05 || progressData.timeSpent > 10000) {
+              console.log('Showing continue notification');
               setShowContinueNotification(true);
+            } else {
+              console.log('Progress too small:', { scrollPosition: progressData.scrollPosition, timeSpent: progressData.timeSpent });
             }
           } catch (error) {
-            // Ignore parsing errors
+            console.error('Error parsing progress data:', error);
           }
         }
         setHasShownNotification(true);

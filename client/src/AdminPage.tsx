@@ -13,12 +13,31 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
     const [lessonStructure, setLessonStructure] = useState<LessonStructure[]>([]);
     const [deleting, setDeleting] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'upload' | 'manage'>('upload');
+    const [folders, setFolders] = useState<{name: string, path: string}[]>([]);
+    const [selectedFolder, setSelectedFolder] = useState<string>('');
 
     useEffect(() => {
+        fetchFolders(); // Always fetch folders on mount
         if (activeTab === 'manage') {
             fetchLessonStructure();
         }
     }, [activeTab]);
+
+    const fetchFolders = async () => {
+        try {
+            const apiUrl = process.env.REACT_APP_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/lessons/folders`);
+            const data = await response.json();
+            setFolders(data.folders);
+            // Set default folder to 'Средний уровень (Подписка)' if available
+            const defaultFolder = data.folders.find((f: any) => f.name.includes('Средний уровень'));
+            if (defaultFolder) {
+                setSelectedFolder(defaultFolder.path);
+            }
+        } catch (error) {
+            console.error('Error fetching folders:', error);
+        }
+    };
 
     const fetchLessonStructure = async () => {
         try {
@@ -57,6 +76,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         const formData = new FormData();
         formData.append('lesson', file);
         formData.append('initData', initData);
+        if (selectedFolder) {
+            formData.append('targetFolder', selectedFolder);
+        }
 
         try {
             const response = await fetch('/api/upload-lesson', {
@@ -199,8 +221,27 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                                 <Upload size={24} />
                                 <div>
                                     <h2>Upload Lesson</h2>
-                                    <p>Upload .md files or .zip archives to "Средний уровень (Подписка)" folder</p>
+                                    <p>Upload .md files or .zip archives to selected lesson folder</p>
                                 </div>
+                            </div>
+
+                            <div className="folder-selection-container">
+                                <label htmlFor="folder-select" className="folder-select-label">
+                                    Target Folder:
+                                </label>
+                                <select 
+                                    id="folder-select"
+                                    value={selectedFolder} 
+                                    onChange={(e) => setSelectedFolder(e.target.value)}
+                                    className="folder-select"
+                                >
+                                    <option value="">-- Select Folder --</option>
+                                    {folders.map((folder) => (
+                                        <option key={folder.path} value={folder.path}>
+                                            {folder.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="file-input-container">
