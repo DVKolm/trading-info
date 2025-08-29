@@ -54,8 +54,15 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose, telegramUser }) => {
           {/* Progress Dashboard */}
           <div className="progress-section">
             <Suspense fallback={
-              <div className="loading-container">
-                <div className="loading-text">Loading progress...</div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '60px',
+                fontSize: '0.9rem',
+                color: 'var(--text-secondary)'
+              }}>
+                <div>Loading...</div>
               </div>
             }>
               <ProgressDashboard />

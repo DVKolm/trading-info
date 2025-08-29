@@ -57,9 +57,41 @@ const ProgressDashboard: React.FC = () => {
         }
       });
 
+      // Calculate total lessons from lesson structure
+      const getTotalLessons = (): number => {
+        try {
+          const structureKey = localStorage.getItem('lesson_structure_cache');
+          if (structureKey) {
+            const structure = JSON.parse(structureKey);
+            let totalLessons = 0;
+            
+            const countLessons = (items: any[]): number => {
+              let count = 0;
+              items.forEach(item => {
+                if (item.name && item.name.startsWith('Урок')) {
+                  count++;
+                } else if (item.children) {
+                  count += countLessons(item.children);
+                }
+              });
+              return count;
+            };
+            
+            totalLessons = countLessons(structure);
+            return totalLessons || progressData.length; // Fallback to started lessons
+          }
+          return progressData.length; // Fallback to started lessons
+        } catch (e) {
+          console.error('Failed to calculate total lessons:', e);
+          return progressData.length; // Fallback to started lessons
+        }
+      };
+
+      const totalLessons = getTotalLessons();
+
       if (progressData.length === 0) {
         return {
-          totalLessonsStarted: 0,
+          totalLessonsStarted: totalLessons,
           totalLessonsCompleted: 0,
           totalTimeSpent: 0,
           averageCompletionScore: 0,
@@ -110,7 +142,7 @@ const ProgressDashboard: React.FC = () => {
       }
 
       return {
-        totalLessonsStarted: progressData.length,
+        totalLessonsStarted: totalLessons,
         totalLessonsCompleted: completedLessons,
         totalTimeSpent,
         averageCompletionScore,
@@ -208,15 +240,6 @@ const ProgressDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon">
-            <Clock size={24} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{formatTime(stats.totalTimeSpent)}</div>
-            <div className="stat-label">Total Study Time</div>
-          </div>
-        </div>
 
 
         <div className="stat-card">
