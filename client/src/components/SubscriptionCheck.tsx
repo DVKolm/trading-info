@@ -72,7 +72,7 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
     setErrorMessage(null);
     
     try {
-      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+      let telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       
       console.log('Telegram User ID:', telegramUserId); // Debug
       console.log('Telegram WebApp data:', window.Telegram?.WebApp?.initDataUnsafe); // Debug
