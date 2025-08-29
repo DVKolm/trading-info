@@ -100,6 +100,118 @@ marked.setOptions({
   headerIds: false,
 });
 
+// Function to detect and fix encoding issues in ZIP entry names
+function fixEncodingIssues(entryName) {
+    // Check if the string contains garbled characters that suggest encoding issues
+    const hasGarbledChars = /[�����������������������������]/.test(entryName);
+    
+    if (hasGarbledChars || /[\x80-\xFF]/.test(entryName)) {
+        try {
+            // Try to decode as CP866 (common for Russian Windows ZIP files)
+            const cp866Buffer = Buffer.from(entryName, 'binary');
+            
+            // Common CP866 to UTF-8 character mappings for Russian
+            const cp866ToUtf8Map = {
+                // Cyrillic letters in CP866 encoding
+                '\u0080': 'А', '\u0081': 'Б', '\u0082': 'В', '\u0083': 'Г', '\u0084': 'Д', '\u0085': 'Е',
+                '\u0086': 'Ж', '\u0087': 'З', '\u0088': 'И', '\u0089': 'Й', '\u008A': 'К', '\u008B': 'Л',
+                '\u008C': 'М', '\u008D': 'Н', '\u008E': 'О', '\u008F': 'П', '\u0090': 'Р', '\u0091': 'С',
+                '\u0092': 'Т', '\u0093': 'У', '\u0094': 'Ф', '\u0095': 'Х', '\u0096': 'Ц', '\u0097': 'Ч',
+                '\u0098': 'Ш', '\u0099': 'Щ', '\u009A': 'Ъ', '\u009B': 'Ы', '\u009C': 'Ь', '\u009D': 'Э',
+                '\u009E': 'Ю', '\u009F': 'Я', '\u00A0': 'а', '\u00A1': 'б', '\u00A2': 'в', '\u00A3': 'г',
+                '\u00A4': 'д', '\u00A5': 'е', '\u00A6': 'ж', '\u00A7': 'з', '\u00A8': 'и', '\u00A9': 'й',
+                '\u00AA': 'к', '\u00AB': 'л', '\u00AC': 'м', '\u00AD': 'н', '\u00AE': 'о', '\u00AF': 'п',
+                '\u00E0': 'р', '\u00E1': 'с', '\u00E2': 'т', '\u00E3': 'у', '\u00E4': 'ф', '\u00E5': 'х',
+                '\u00E6': 'ц', '\u00E7': 'ч', '\u00E8': 'ш', '\u00E9': 'щ', '\u00EA': 'ъ', '\u00EB': 'ы',
+                '\u00EC': 'ь', '\u00ED': 'э', '\u00EE': 'ю', '\u00EF': 'я'
+            };
+            
+            // Apply character mapping
+            let fixedName = entryName;
+            Object.keys(cp866ToUtf8Map).forEach(cp866Char => {
+                const regex = new RegExp(cp866Char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                fixedName = fixedName.replace(regex, cp866ToUtf8Map[cp866Char]);
+            });
+            
+            // If we still have issues, try a different approach
+            if (/[�]/.test(fixedName)) {
+                // Try to interpret as Windows-1251
+                const bytes = [];
+                for (let i = 0; i < entryName.length; i++) {
+                    bytes.push(entryName.charCodeAt(i));
+                }
+                
+                // Convert common Windows-1251 Russian characters
+                const win1251Map = {
+                    192: 'А', 193: 'Б', 194: 'В', 195: 'Г', 196: 'Д', 197: 'Е', 198: 'Ж', 199: 'З',
+                    200: 'И', 201: 'Й', 202: 'К', 203: 'Л', 204: 'М', 205: 'Н', 206: 'О', 207: 'П',
+                    208: 'Р', 209: 'С', 210: 'Т', 211: 'У', 212: 'Ф', 213: 'Х', 214: 'Ц', 215: 'Ч',
+                    216: 'Ш', 217: 'Щ', 218: 'Ъ', 219: 'Ы', 220: 'Ь', 221: 'Э', 222: 'Ю', 223: 'Я',
+                    224: 'а', 225: 'б', 226: 'в', 227: 'г', 228: 'д', 229: 'е', 230: 'ж', 231: 'з',
+                    232: 'и', 233: 'й', 234: 'к', 235: 'л', 236: 'м', 237: 'н', 238: 'о', 239: 'п',
+                    240: 'р', 241: 'с', 242: 'т', 243: 'у', 244: 'ф', 245: 'х', 246: 'ц', 247: 'ч',
+                    248: 'ш', 249: 'щ', 250: 'ъ', 251: 'ы', 252: 'ь', 253: 'э', 254: 'ю', 255: 'я'
+                };
+                
+                let result = '';
+                for (const byte of bytes) {
+                    if (win1251Map[byte]) {
+                        result += win1251Map[byte];
+                    } else {
+                        result += String.fromCharCode(byte);
+                    }
+                }
+                fixedName = result;
+            }
+            
+            return fixedName;
+        } catch (error) {
+            logger.warn('Failed to fix encoding for entry name', { entryName, error: error.message });
+            return entryName;
+        }
+    }
+    
+    return entryName;
+}
+
+// Custom ZIP extraction function with proper encoding handling
+async function extractZipWithProperEncoding(zip, targetDir) {
+    const entries = zip.getEntries();
+    
+    for (const entry of entries) {
+        try {
+            // Fix encoding issues in the entry name
+            const fixedEntryName = fixEncodingIssues(entry.entryName);
+            const entryPath = path.join(targetDir, fixedEntryName);
+            
+            // Ensure the directory structure exists
+            if (entry.isDirectory) {
+                await fs.ensureDir(entryPath);
+            } else {
+                // Ensure parent directory exists
+                await fs.ensureDir(path.dirname(entryPath));
+                
+                // Extract file content
+                const content = entry.getData();
+                await fs.writeFile(entryPath, content);
+            }
+            
+            logger.info('Extracted ZIP entry', {
+                original: entry.entryName,
+                fixed: fixedEntryName,
+                isDirectory: entry.isDirectory
+            });
+            
+        } catch (error) {
+            logger.error('Error extracting ZIP entry', {
+                entryName: entry.entryName,
+                error: error.message,
+                stack: error.stack
+            });
+        }
+    }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -232,9 +344,8 @@ app.post('/api/upload-lesson', upload.single('lesson'), async (req, res) => {
             // Ensure target directory exists
             await fs.ensureDir(targetDir);
             
-            // Extract directly to target folder
-            // The zip should contain a folder with the lesson files
-            zip.extractAllTo(targetDir, true);
+            // Custom extraction with proper encoding handling
+            await extractZipWithProperEncoding(zip, targetDir);
 
         } else if (path.extname(originalName) === '.md') {
             const lessonName = path.basename(originalName, '.md');
