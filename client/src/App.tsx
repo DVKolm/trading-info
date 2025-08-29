@@ -217,7 +217,7 @@ const App: React.FC = () => {
     // Don't restore position automatically - let the global continue reading handle it
   };
 
-  const handleLessonSelect = async (lessonPath: string) => {
+  const handleLessonSelect = async (lessonPath: string, scrollToPosition?: number) => {
     try {
       // Save scroll position of current lesson before switching
       if (selectedLesson && selectedLesson.path !== lessonPath) {
@@ -235,10 +235,22 @@ const App: React.FC = () => {
       setSidebarOpen(false); // Close sidebar on mobile after selection
       
       // Update last read lesson
-      updateLastReadLesson(lessonPath, lessonData, 0);
+      updateLastReadLesson(lessonPath, lessonData, scrollToPosition || 0);
       
-      // Restore scroll position for this lesson
-      restoreScrollPosition(lessonPath);
+      // Scroll to specified position or top
+      setTimeout(() => {
+        const lessonViewer = document.querySelector('.lesson-viewer');
+        const mainContent = document.querySelector('.main-content');
+        const targetPosition = scrollToPosition || 0;
+        
+        if (lessonViewer) {
+          lessonViewer.scrollTop = targetPosition;
+        } else if (mainContent) {
+          mainContent.scrollTop = targetPosition;
+        } else {
+          window.scrollTo(0, targetPosition);
+        }
+      }, 100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
@@ -399,21 +411,7 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
 
   const handleContinueReading = () => {
     if (lastReadLesson) {
-      handleLessonSelect(lastReadLesson.path);
-      // Restore scroll position after a delay to ensure content is loaded
-      setTimeout(() => {
-        const lessonViewer = document.querySelector('.lesson-viewer');
-        const mainContent = document.querySelector('.main-content');
-        
-        if (lessonViewer) {
-          lessonViewer.scrollTop = lastReadLesson.scrollPosition;
-        } else if (mainContent) {
-          mainContent.scrollTop = lastReadLesson.scrollPosition;
-        } else {
-          window.scrollTo(0, lastReadLesson.scrollPosition);
-        }
-      }, 500);
-      
+      handleLessonSelect(lastReadLesson.path, lastReadLesson.scrollPosition);
       setShowContinueReading(false);
     }
   };
