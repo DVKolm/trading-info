@@ -25,7 +25,6 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
   const [loaded, setLoaded] = useState(false);
   const [inView, setInView] = useState(false);
   const [error, setError] = useState(false);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 300 }); // Default height to prevent jumps
   const imgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,17 +48,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
     return () => observer.disconnect();
   }, []);
 
-  const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.target as HTMLImageElement;
-    // Calculate aspect ratio to maintain consistent height
-    const aspectRatio = img.naturalWidth / img.naturalHeight;
-    const containerWidth = imgRef.current?.offsetWidth || 600;
-    const calculatedHeight = containerWidth / aspectRatio;
-    
-    setDimensions({ 
-      width: containerWidth, 
-      height: Math.min(calculatedHeight, 600) // Max height to prevent too tall images
-    });
+  const handleLoad = () => {
     setLoaded(true);
   };
 
@@ -76,7 +65,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
         position: 'relative',
         display: 'block',
         width: '100%',
-        height: `${dimensions.height}px`,
+        height: '300px', // Fixed height to prevent content jumps
         margin: '1rem 0',
         ...style
       }}
@@ -130,8 +119,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
             transition: 'opacity 0.3s ease-in-out',
             position: 'absolute',
             top: 0,
-            left: 0,
-            display: loaded ? 'block' : 'none'
+            left: 0
           }}
         />
       )}

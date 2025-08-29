@@ -252,7 +252,9 @@ const App: React.FC = () => {
         throw new Error('Search failed');
       }
       const data = await response.json();
-      return data.results;
+      // Filter out folders, only show files
+      const filteredResults = data.results.filter((result: any) => result.type === 'lesson' || result.type === 'file');
+      return filteredResults;
     } catch (err) {
       console.error('Search error:', err);
       return [];
