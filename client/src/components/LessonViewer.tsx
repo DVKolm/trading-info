@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Lesson } from '../types';
 
 interface LessonViewerProps {
@@ -27,11 +27,8 @@ interface LazyImageProps {
 const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => {
   const [loaded, setLoaded] = useState(() => imageCache.has(src));
   const [error, setError] = useState(false);
-  const [imageSize, setImageSize] = useState<{width: number, height: number} | null>(null);
 
-  const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.target as HTMLImageElement;
-    setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+  const handleLoad = () => {
     imageCache.add(src);
     setLoaded(true);
   };
@@ -75,27 +72,9 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
       style={{
         position: 'relative',
         margin: '1rem 0',
-        minHeight: loaded ? 'auto' : '200px',
-        backgroundColor: loaded ? 'transparent' : 'var(--bg-tertiary)',
-        borderRadius: '8px',
-        border: loaded ? 'none' : '1px solid var(--border-color)',
-        display: loaded ? 'block' : 'flex',
-        alignItems: loaded ? 'normal' : 'center',
-        justifyContent: loaded ? 'normal' : 'center',
         ...style
       }}
-    >
-      {!loaded && !error && (
-        <div style={{
-          color: 'var(--text-muted)',
-          fontSize: '14px',
-          textAlign: 'center',
-          zIndex: 1
-        }}>
-          ⏳ Загрузка изображения...
-        </div>
-      )}
-      
+    >      
       <img
         src={src}
         alt={alt}
@@ -105,8 +84,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
           maxWidth: '100%',
           height: 'auto',
           borderRadius: '8px',
-          display: loaded ? 'block' : 'none',
-          transition: 'opacity 0.3s ease-in-out'
+          display: 'block'
         }}
       />
     </div>

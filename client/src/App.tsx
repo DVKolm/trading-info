@@ -63,7 +63,6 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<string[]>([]);
   const [scrollPositions, setScrollPositions] = useState<Map<string, number>>(new Map());
   const [lastReadLesson, setLastReadLesson] = useState<{path: string, title: string, timestamp: number, scrollPosition: number} | null>(null);
