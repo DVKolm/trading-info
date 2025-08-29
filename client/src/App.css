@@ -823,6 +823,10 @@ code {
   font-weight: 700;
 }
 
+.lesson-br {
+  line-height: 2;
+}
+
 .lesson-em {
   color: var(--accent-secondary);
   font-style: italic;

@@ -291,6 +291,9 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
                 />
               );
             },
+            br({ ...props }) {
+              return <br className="lesson-br" {...props} />;
+            },
           }}
         >
           {processedContent}
