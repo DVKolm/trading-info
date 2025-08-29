@@ -78,8 +78,8 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       console.log('Telegram WebApp data:', window.Telegram?.WebApp?.initDataUnsafe); // Debug
       
       if (!telegramUserId) {
-        // В режиме разработки - для тестирования
-        if (process.env.NODE_ENV === 'development') {
+        // В режиме разработки - для тестирования (временно отключено)
+        if (false && process.env.NODE_ENV === 'development') {
           console.log('Development mode: simulating subscription verification');
           const subscriptionData = {
             verified: true,
@@ -151,8 +151,8 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
       console.error('Subscription verification failed:', error);
       localStorage.removeItem('telegram_subscription_verified');
       
-      // В режиме разработки - для тестирования  
-      if (process.env.NODE_ENV === 'development') {
+      // В режиме разработки - для тестирования (временно отключено)
+      if (false && process.env.NODE_ENV === 'development') {
         console.log('Development mode: API error, simulating successful verification for testing');
         const subscriptionData = {
           verified: true,
@@ -252,10 +252,7 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
                 disabled={isChecking}
               >
                 {isChecking ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    <span>Проверяем подписку...</span>
-                  </>
+                  'Проверяем подписку...'
                 ) : (
                   'Я подписался'
                 )}
