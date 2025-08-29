@@ -210,8 +210,10 @@ const App: React.FC = () => {
           }
         }
       } else if (savedSubscriptionData && !telegramUserId) {
-        // Нет ID пользователя, но есть сохраненная подписка (может быть тестирование)
-        setIsSubscribed(true);
+        // Нет ID пользователя - не можем верифицировать подписку
+        console.warn('No telegram user ID - cannot verify subscription');
+        localStorage.removeItem('telegram_subscription_verified');
+        setIsSubscribed(false);
         return;
       }
 
@@ -646,7 +648,7 @@ const App: React.FC = () => {
     
     if (isSubscriptionError) {
       return (
-        <Suspense fallback={<div className="loading-container"><div className="loading-spinner">Loading...</div></div>}>
+        <Suspense fallback={<div className="loading-container"><div className="loading-text">Loading...</div></div>}>
           <SubscriptionCheck 
             onSubscriptionVerified={() => {
               setError(null);
