@@ -451,6 +451,11 @@
   border-top: 2px solid #ffffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+.verify-button span {
+  flex-shrink: 0;
 }
 
 @keyframes spin {

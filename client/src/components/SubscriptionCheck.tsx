@@ -60,25 +60,50 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
     try {
       const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       
+      console.log('Telegram User ID:', telegramUserId); // Debug
+      console.log('Telegram WebApp data:', window.Telegram?.WebApp?.initDataUnsafe); // Debug
+      
       if (!telegramUserId) {
+        // В режиме разработки - для тестирования
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Development mode: simulating subscription verification');
+          localStorage.setItem('telegram_subscription_verified', 'true');
+          setStep('verified');
+          onSubscriptionVerified();
+          return;
+        }
+        
         setErrorMessage('Не удалось получить данные пользователя Telegram. Попробуйте перезагрузить приложение.');
         return;
       }
       
       // Отправляем запрос на сервер для проверки подписки
       const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+      console.log('API URL:', apiUrl); // Debug
+      
+      const requestBody = {
+        telegram_user_id: telegramUserId,
+        verified: true
+      };
+      console.log('Request body:', requestBody); // Debug
+      
       const response = await fetch(`${apiUrl}/api/subscription/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          telegram_user_id: telegramUserId,
-          verified: true
-        })
+        body: JSON.stringify(requestBody)
       });
       
+      console.log('Response status:', response.status); // Debug
+      console.log('Response headers:', response.headers); // Debug
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
+      console.log('Server response:', result); // Debug
       
       if (result.verified) {
         // Пользователь подписан
@@ -103,6 +128,15 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
     } catch (error) {
       console.error('Subscription verification failed:', error);
       localStorage.removeItem('telegram_subscription_verified');
+      
+      // В режиме разработки - для тестирования  
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Development mode: API error, simulating successful verification for testing');
+        localStorage.setItem('telegram_subscription_verified', 'true');
+        setStep('verified');
+        onSubscriptionVerified();
+        return;
+      }
       
       setErrorMessage('Произошла ошибка при проверке подписки. Проверьте подключение к интернету и попробуйте снова.');
       setStep('initial');
@@ -194,7 +228,7 @@ const SubscriptionCheck: React.FC<SubscriptionCheckProps> = ({ onSubscriptionVer
                 {isChecking ? (
                   <>
                     <div className="loading-spinner"></div>
-                    Проверяем подписку...
+                    <span>Проверяем подписку...</span>
                   </>
                 ) : (
                   'Я подписался'
