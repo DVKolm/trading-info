@@ -19,11 +19,6 @@ interface OverallStats {
   averageReadingSpeed: number; // words per minute
   totalVisits: number;
   streak: number; // consecutive days with lesson activity
-  engagementDistribution: {
-    high: number;
-    medium: number;
-    low: number;
-  };
 }
 
 const ProgressDashboard: React.FC = () => {
@@ -121,8 +116,7 @@ const ProgressDashboard: React.FC = () => {
           averageCompletionScore: 0,
           averageReadingSpeed: 0,
           totalVisits: 0,
-          streak: 0,
-          engagementDistribution: { high: 0, medium: 0, low: 0 }
+          streak: 0
         };
       }
 
@@ -138,11 +132,6 @@ const ProgressDashboard: React.FC = () => {
         ? validReadingSpeeds.reduce((sum, { data }) => sum + data.readingSpeed, 0) / validReadingSpeeds.length
         : 0;
 
-      // Calculate engagement distribution
-      const engagementDistribution = progressData.reduce((acc, { data }) => {
-        acc[data.engagementLevel]++;
-        return acc;
-      }, { high: 0, medium: 0, low: 0 });
 
       // Calculate streak (simplified - consecutive days with activity)
       const sortedByDate = progressData
@@ -172,8 +161,7 @@ const ProgressDashboard: React.FC = () => {
         averageCompletionScore,
         averageReadingSpeed,
         totalVisits,
-        streak,
-        engagementDistribution
+        streak
       };
     };
 
@@ -277,50 +265,6 @@ const ProgressDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Engagement Distribution */}
-      {stats.totalLessonsStarted > 0 && (
-        <div className="engagement-section">
-          <h3>Engagement Level</h3>
-          <div className="engagement-bars">
-            <div className="engagement-bar">
-              <div className="engagement-label">High</div>
-              <div className="engagement-progress">
-                <div 
-                  className="engagement-fill high" 
-                  style={{ 
-                    width: `${(stats.engagementDistribution.high / stats.totalLessonsStarted) * 100}%` 
-                  }}
-                />
-              </div>
-              <div className="engagement-count">{stats.engagementDistribution.high}</div>
-            </div>
-            <div className="engagement-bar">
-              <div className="engagement-label">Medium</div>
-              <div className="engagement-progress">
-                <div 
-                  className="engagement-fill medium" 
-                  style={{ 
-                    width: `${(stats.engagementDistribution.medium / stats.totalLessonsStarted) * 100}%` 
-                  }}
-                />
-              </div>
-              <div className="engagement-count">{stats.engagementDistribution.medium}</div>
-            </div>
-            <div className="engagement-bar">
-              <div className="engagement-label">Low</div>
-              <div className="engagement-progress">
-                <div 
-                  className="engagement-fill low" 
-                  style={{ 
-                    width: `${(stats.engagementDistribution.low / stats.totalLessonsStarted) * 100}%` 
-                  }}
-                />
-              </div>
-              <div className="engagement-count">{stats.engagementDistribution.low}</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Recent Activity */}
       {recentActivity.length > 0 && (
