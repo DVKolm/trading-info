@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -23,30 +23,7 @@ interface LazyImageProps {
 
 const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => {
   const [loaded, setLoaded] = useState(false);
-  const [inView, setInView] = useState(false);
   const [error, setError] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '50px 0px' // Start loading 50px before image comes into view
-      }
-    );
-
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   const handleLoad = () => {
     setLoaded(true);
@@ -54,79 +31,14 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 
   const handleError = () => {
     setError(true);
-    setLoaded(true);
   };
 
-  return (
-    <div
-      ref={imgRef}
-      className={`lazy-image-container ${className || ''}`}
-      style={{
-        position: 'relative',
-        display: 'block',
-        width: '100%',
-        height: '300px', // Fixed height to prevent content jumps
-        margin: '1rem 0',
-        ...style
-      }}
-    >
-      {!inView && (
-        <div style={{
-          height: '100%',
-          backgroundColor: 'var(--bg-tertiary)',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--text-muted)',
-          fontSize: '14px',
-          textAlign: 'center',
-          border: '1px solid var(--border-color)'
-        }}>
-          📷 Изображение загрузится при прокрутке
-        </div>
-      )}
-      
-      {inView && !loaded && !error && (
-        <div style={{
-          height: '100%',
-          backgroundColor: 'var(--bg-tertiary)',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--text-muted)',
-          fontSize: '14px',
-          textAlign: 'center',
-          border: '1px solid var(--border-color)'
-        }}>
-          ⏳ Загрузка изображения...
-        </div>
-      )}
-
-      {inView && (
-        <img
-          src={src}
-          alt={alt}
-          onLoad={handleLoad}
-          onError={handleError}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            borderRadius: '8px',
-            opacity: loaded ? 1 : 0,
-            transition: 'opacity 0.3s ease-in-out',
-            position: 'absolute',
-            top: 0,
-            left: 0
-          }}
-        />
-      )}
-
-      {error && (
-        <div style={{
-          height: '100%',
+  if (error) {
+    return (
+      <div 
+        className={className}
+        style={{
+          minHeight: '200px',
           backgroundColor: 'var(--bg-tertiary)',
           borderRadius: '8px',
           display: 'flex',
@@ -137,14 +49,64 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
           textAlign: 'center',
           padding: '20px',
           border: '1px solid var(--border-color)',
+          margin: '1rem 0',
           flexDirection: 'column',
-          gap: '0.5rem'
+          gap: '0.5rem',
+          ...style
+        }}
+      >
+        <span style={{ fontSize: '24px' }}>❌</span>
+        <span>Не удалось загрузить изображение</span>
+        <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{alt}</small>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className={className}
+      style={{
+        position: 'relative',
+        margin: '1rem 0',
+        ...style
+      }}
+    >
+      {!loaded && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'var(--bg-tertiary)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-muted)',
+          fontSize: '14px',
+          textAlign: 'center',
+          border: '1px solid var(--border-color)',
+          zIndex: 1
         }}>
-          <span style={{ fontSize: '24px' }}>❌</span>
-          <span>Не удалось загрузить изображение</span>
-          <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{alt}</small>
+          ⏳ Загрузка изображения...
         </div>
       )}
+      
+      <img
+        src={src}
+        alt={alt}
+        onLoad={handleLoad}
+        onError={handleError}
+        style={{
+          maxWidth: '100%',
+          height: 'auto',
+          borderRadius: '8px',
+          display: 'block',
+          opacity: loaded ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out'
+        }}
+      />
     </div>
   );
 };
