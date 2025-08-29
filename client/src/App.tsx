@@ -259,20 +259,45 @@ const App: React.FC = () => {
         setSidebarOpen(false);
         updateLastReadLesson(lessonPath, cachedLesson, scrollToPosition || 0);
         
-        // Scroll to specified position or top
-        setTimeout(() => {
-          const lessonViewer = document.querySelector('.lesson-viewer');
-          const mainContent = document.querySelector('.main-content');
-          const targetPosition = scrollToPosition || 0;
-          
-          if (lessonViewer) {
-            lessonViewer.scrollTop = targetPosition;
-          } else if (mainContent) {
-            mainContent.scrollTop = targetPosition;
-          } else {
-            window.scrollTo(0, targetPosition);
-          }
-        }, 100);
+        // Scroll to specified position or top (cached content)
+        if (scrollToPosition && scrollToPosition > 0) {
+          // For saved positions with cached content, still wait for render
+          let attempts = 0;
+          const maxAttempts = 5; // Fewer attempts since content is cached
+          const scrollInterval = setInterval(() => {
+            const lessonViewer = document.querySelector('.lesson-viewer');
+            const mainContent = document.querySelector('.main-content');
+            
+            const container = lessonViewer || mainContent || document.body;
+            const containerHeight = container.scrollHeight;
+            
+            if (containerHeight > scrollToPosition || attempts >= maxAttempts) {
+              if (lessonViewer) {
+                lessonViewer.scrollTop = scrollToPosition;
+              } else if (mainContent) {
+                mainContent.scrollTop = scrollToPosition;
+              } else {
+                window.scrollTo(0, scrollToPosition);
+              }
+              clearInterval(scrollInterval);
+            }
+            attempts++;
+          }, 50); // Faster interval for cached content
+        } else {
+          // Scroll to top for new lessons
+          setTimeout(() => {
+            const lessonViewer = document.querySelector('.lesson-viewer');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (lessonViewer) {
+              lessonViewer.scrollTop = 0;
+            } else if (mainContent) {
+              mainContent.scrollTop = 0;
+            } else {
+              window.scrollTo(0, 0);
+            }
+          }, 50);
+        }
         return;
       }
       
@@ -292,20 +317,46 @@ const App: React.FC = () => {
       // Update last read lesson
       updateLastReadLesson(lessonPath, lessonData, scrollToPosition || 0);
       
-      // Scroll to specified position or top
-      setTimeout(() => {
-        const lessonViewer = document.querySelector('.lesson-viewer');
-        const mainContent = document.querySelector('.main-content');
-        const targetPosition = scrollToPosition || 0;
-        
-        if (lessonViewer) {
-          lessonViewer.scrollTop = targetPosition;
-        } else if (mainContent) {
-          mainContent.scrollTop = targetPosition;
-        } else {
-          window.scrollTo(0, targetPosition);
-        }
-      }, 100);
+      // Scroll to specified position or top (wait for content to load)
+      if (scrollToPosition && scrollToPosition > 0) {
+        // For saved positions, wait longer and try multiple times
+        let attempts = 0;
+        const maxAttempts = 10;
+        const scrollInterval = setInterval(() => {
+          const lessonViewer = document.querySelector('.lesson-viewer');
+          const mainContent = document.querySelector('.main-content');
+          
+          // Check if content is loaded (has sufficient height)
+          const container = lessonViewer || mainContent || document.body;
+          const containerHeight = container.scrollHeight;
+          
+          if (containerHeight > scrollToPosition || attempts >= maxAttempts) {
+            if (lessonViewer) {
+              lessonViewer.scrollTop = scrollToPosition;
+            } else if (mainContent) {
+              mainContent.scrollTop = scrollToPosition;
+            } else {
+              window.scrollTo(0, scrollToPosition);
+            }
+            clearInterval(scrollInterval);
+          }
+          attempts++;
+        }, 100);
+      } else {
+        // For new lessons, scroll to top immediately
+        setTimeout(() => {
+          const lessonViewer = document.querySelector('.lesson-viewer');
+          const mainContent = document.querySelector('.main-content');
+          
+          if (lessonViewer) {
+            lessonViewer.scrollTop = 0;
+          } else if (mainContent) {
+            mainContent.scrollTop = 0;
+          } else {
+            window.scrollTo(0, 0);
+          }
+        }, 100);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
