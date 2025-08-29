@@ -25,6 +25,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
   const [loaded, setLoaded] = useState(false);
   const [inView, setInView] = useState(false);
   const [error, setError] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 300 }); // Default height to prevent jumps
   const imgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +49,17 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
     return () => observer.disconnect();
   }, []);
 
-  const handleLoad = () => {
+  const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.target as HTMLImageElement;
+    // Calculate aspect ratio to maintain consistent height
+    const aspectRatio = img.naturalWidth / img.naturalHeight;
+    const containerWidth = imgRef.current?.offsetWidth || 600;
+    const calculatedHeight = containerWidth / aspectRatio;
+    
+    setDimensions({ 
+      width: containerWidth, 
+      height: Math.min(calculatedHeight, 600) // Max height to prevent too tall images
+    });
     setLoaded(true);
   };
 
@@ -63,22 +74,25 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
       className={`lazy-image-container ${className || ''}`}
       style={{
         position: 'relative',
-        display: 'inline-block',
-        width: '100%'
+        display: 'block',
+        width: '100%',
+        height: `${dimensions.height}px`,
+        margin: '1rem 0',
+        ...style
       }}
     >
       {!inView && (
         <div style={{
-          minHeight: '200px',
-          backgroundColor: 'rgba(40, 40, 50, 0.3)',
+          height: '100%',
+          backgroundColor: 'var(--bg-tertiary)',
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'rgba(255, 255, 255, 0.5)',
+          color: 'var(--text-muted)',
           fontSize: '14px',
           textAlign: 'center',
-          margin: '1rem 0'
+          border: '1px solid var(--border-color)'
         }}>
           📷 Изображение загрузится при прокрутке
         </div>
@@ -86,16 +100,16 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
       
       {inView && !loaded && !error && (
         <div style={{
-          minHeight: '200px',
-          backgroundColor: 'rgba(40, 40, 50, 0.3)',
+          height: '100%',
+          backgroundColor: 'var(--bg-tertiary)',
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'rgba(255, 255, 255, 0.5)',
+          color: 'var(--text-muted)',
           fontSize: '14px',
           textAlign: 'center',
-          margin: '1rem 0'
+          border: '1px solid var(--border-color)'
         }}>
           ⏳ Загрузка изображения...
         </div>
@@ -108,12 +122,15 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
           onLoad={handleLoad}
           onError={handleError}
           style={{
-            maxWidth: '100%',
-            height: 'auto',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
             borderRadius: '8px',
-            margin: '1rem 0',
             opacity: loaded ? 1 : 0,
             transition: 'opacity 0.3s ease-in-out',
+            position: 'absolute',
+            top: 0,
+            left: 0,
             display: loaded ? 'block' : 'none'
           }}
         />
@@ -121,19 +138,23 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 
       {error && (
         <div style={{
-          minHeight: '100px',
-          backgroundColor: 'rgba(80, 40, 40, 0.3)',
+          height: '100%',
+          backgroundColor: 'var(--bg-tertiary)',
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#ff6b6b',
+          color: 'var(--error-color)',
           fontSize: '14px',
           textAlign: 'center',
           padding: '20px',
-          margin: '1rem 0'
+          border: '1px solid var(--border-color)',
+          flexDirection: 'column',
+          gap: '0.5rem'
         }}>
-          ❌ Не удалось загрузить изображение: {alt}
+          <span style={{ fontSize: '24px' }}>❌</span>
+          <span>Не удалось загрузить изображение</span>
+          <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{alt}</small>
         </div>
       )}
     </div>

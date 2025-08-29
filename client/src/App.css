@@ -20,6 +20,12 @@
   --warning-color: #faa61a;
   --error-color: #f04747;
   --code-bg: #2f3136;
+  --welcome-gradient-start: #2a2a3a;
+  --welcome-gradient-mid: #1f1f2e;
+  --welcome-gradient-end: #1a1a28;
+  --welcome-wave-1: rgba(54, 54, 54, 0.4);
+  --welcome-wave-2: rgba(114, 118, 125, 0.2);
+  --welcome-wave-3: rgba(45, 45, 45, 0.3);
 }
 
 /* Light Theme */
@@ -38,6 +44,12 @@
   --warning-color: #f59e0b;
   --error-color: #ef4444;
   --code-bg: #f8f9fa;
+  --welcome-gradient-start: #e5e5f0;
+  --welcome-gradient-mid: #d0d0e0;
+  --welcome-gradient-end: #c0c0d5;
+  --welcome-wave-1: rgba(242, 242, 242, 0.4);
+  --welcome-wave-2: rgba(184, 184, 184, 0.2);
+  --welcome-wave-3: rgba(232, 232, 232, 0.3);
 }
 
 body {
@@ -428,7 +440,14 @@ code {
   padding: 2rem;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(-45deg, #1a1a1a, #0f0f0f, #1e1e1e, #2d2d2d, #1c1c1c, #252525);
+  background: linear-gradient(-45deg, 
+    var(--welcome-gradient-start), 
+    var(--welcome-gradient-mid), 
+    var(--welcome-gradient-end), 
+    var(--bg-secondary), 
+    var(--welcome-gradient-start), 
+    var(--bg-tertiary)
+  );
   background-size: 400% 400%;
   animation: gradient-background 15s ease infinite;
 }
@@ -441,12 +460,12 @@ code {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(ellipse 800px 600px at 20% 30%, rgba(40, 40, 40, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 600px 800px at 80% 70%, rgba(50, 50, 50, 0.25) 0%, transparent 70%),
-    radial-gradient(ellipse 1000px 400px at 50% 20%, rgba(35, 35, 35, 0.2) 0%, transparent 60%);
+    radial-gradient(ellipse 800px 600px at 20% 30%, var(--welcome-wave-1) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 800px at 80% 70%, var(--welcome-wave-2) 0%, transparent 70%),
+    radial-gradient(ellipse 1000px 400px at 50% 20%, var(--welcome-wave-3) 0%, transparent 60%);
   animation: dark-water-waves 25s ease-in-out infinite;
   pointer-events: none;
-  opacity: 0.2;
+  opacity: 0.6;
 }
 
 .welcome-screen::after {
@@ -457,12 +476,12 @@ code {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(ellipse 400px 600px at 10% 80%, rgba(45, 45, 45, 0.25) 0%, transparent 65%),
-    radial-gradient(ellipse 500px 300px at 90% 10%, rgba(38, 38, 38, 0.2) 0%, transparent 60%),
-    radial-gradient(ellipse 700px 500px at 70% 50%, rgba(42, 42, 42, 0.18) 0%, transparent 55%);
+    radial-gradient(ellipse 400px 600px at 10% 80%, var(--welcome-wave-1) 0%, transparent 65%),
+    radial-gradient(ellipse 500px 300px at 90% 10%, var(--welcome-wave-2) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 70% 50%, var(--welcome-wave-3) 0%, transparent 55%);
   animation: dark-water-waves-reverse 30s ease-in-out infinite reverse;
   pointer-events: none;
-  opacity: 0.15;
+  opacity: 0.4;
 }
 
 @keyframes dark-water-waves {
