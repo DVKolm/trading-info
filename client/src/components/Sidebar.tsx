@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { ChevronRight, ChevronDown, Search, Menu, X, File, Folder } from 'lucide-react';
 import { LessonStructure, SearchResult } from '../types';
 
@@ -12,7 +12,83 @@ interface SidebarProps {
   onSubscriptionRequired: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({
+// Memoized components for performance
+interface FolderItemProps {
+  item: LessonStructure;
+  level: number;
+  isExpanded: boolean;
+  onToggle: (id: string) => void;
+  renderChildren: (item: LessonStructure, level: number) => React.ReactNode;
+}
+
+const FolderItem = memo<FolderItemProps>(({ item, level, isExpanded, onToggle, renderChildren }) => {
+  const paddingLeft = `${level * 20 + 12}px`;
+
+  return (
+    <div className="folder-item">
+      <div
+        className="folder-header"
+        style={{ paddingLeft }}
+        onClick={() => onToggle(item.id)}
+      >
+        <div className="folder-icon">
+          {isExpanded ? (
+            <ChevronDown size={16} />
+          ) : (
+            <ChevronRight size={16} />
+          )}
+        </div>
+        <Folder size={16} />
+        <span className="folder-name">{item.name}</span>
+      </div>
+      {isExpanded && item.children && (
+        <div className="folder-children">
+          {item.children.map(child => renderChildren(child, level + 1))}
+        </div>
+      )}
+    </div>
+  );
+});
+
+FolderItem.displayName = 'FolderItem';
+
+interface LessonItemProps {
+  item: LessonStructure;
+  level: number;
+  isSubscribed: boolean;
+  onLessonSelect: (path: string) => void;
+  onSubscriptionRequired: () => void;
+}
+
+const LessonItem = memo<LessonItemProps>(({ item, level, isSubscribed, onLessonSelect, onSubscriptionRequired }) => {
+  const paddingLeft = `${level * 20 + 12}px`;
+
+  const handleClick = useCallback(() => {
+    const isPremiumLesson = item.path.includes('Средний уровень (Подписка)') || item.path.includes('🎓');
+    
+    if (isPremiumLesson && !isSubscribed) {
+      onSubscriptionRequired();
+      return;
+    }
+    
+    onLessonSelect(item.path);
+  }, [item.path, isSubscribed, onLessonSelect, onSubscriptionRequired]);
+
+  return (
+    <div
+      className="lesson-item"
+      style={{ paddingLeft }}
+      onClick={handleClick}
+    >
+      <File size={16} />
+      <span className="lesson-name">{item.name}</span>
+    </div>
+  );
+});
+
+LessonItem.displayName = 'LessonItem';
+
+const Sidebar: React.FC<SidebarProps> = memo(({
   structure,
   isOpen,
   onToggle,
@@ -25,6 +101,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Memoize the structure rendering to avoid unnecessary re-renders
+  const memoizedStructure = useMemo(() => structure, [structure]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -58,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [searchQuery, onSearch]);
 
-  const toggleFolder = (folderId: string) => {
+  const toggleFolder = useCallback((folderId: string) => {
     setExpandedFolders(prev => {
       const newSet = new Set(prev);
       if (newSet.has(folderId)) {
@@ -68,64 +147,37 @@ const Sidebar: React.FC<SidebarProps> = ({
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const renderStructureItem = (item: LessonStructure, level: number = 0) => {
+  const renderStructureItem = useCallback((item: LessonStructure, level: number = 0): React.ReactNode => {
     const isExpanded = expandedFolders.has(item.id);
-    const paddingLeft = `${level * 20 + 12}px`;
 
     if (item.type === 'folder') {
       return (
-        <div key={item.id} className="folder-item">
-          <div
-            className="folder-header"
-            style={{ paddingLeft }}
-            onClick={() => toggleFolder(item.id)}
-          >
-            <div className="folder-icon">
-              {isExpanded ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronRight size={16} />
-              )}
-            </div>
-            <Folder size={16} />
-            <span className="folder-name">{item.name}</span>
-          </div>
-          {isExpanded && item.children && (
-            <div className="folder-children">
-              {item.children.map(child => renderStructureItem(child, level + 1))}
-            </div>
-          )}
-        </div>
+        <FolderItem
+          key={item.id}
+          item={item}
+          level={level}
+          isExpanded={isExpanded}
+          onToggle={toggleFolder}
+          renderChildren={renderStructureItem}
+        />
       );
     }
 
-    const handleLessonClick = () => {
-      const isPremiumLesson = item.path.includes('Средний уровень (Подписка)') || item.path.includes('🎓');
-      
-      if (isPremiumLesson && !isSubscribed) {
-        onSubscriptionRequired();
-        return;
-      }
-      
-      onLessonSelect(item.path);
-    };
-
     return (
-      <div
+      <LessonItem
         key={item.id}
-        className="lesson-item"
-        style={{ paddingLeft }}
-        onClick={handleLessonClick}
-      >
-        <File size={16} />
-        <span className="lesson-name">{item.name}</span>
-      </div>
+        item={item}
+        level={level}
+        isSubscribed={isSubscribed}
+        onLessonSelect={onLessonSelect}
+        onSubscriptionRequired={onSubscriptionRequired}
+      />
     );
-  };
+  }, [expandedFolders, toggleFolder, isSubscribed, onLessonSelect, onSubscriptionRequired]);
 
-  const renderSearchResults = () => {
+  const renderSearchResults = useCallback(() => {
     if (isSearching) {
       return <div className="search-loading">Searching...</div>;
     }
@@ -157,7 +209,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <span>{result.name}</span>
       </div>
     ));
-  };
+  }, [isSearching, searchResults, searchQuery, isSubscribed, onLessonSelect, onSubscriptionRequired]);
 
   return (
     <>
@@ -193,7 +245,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             <div className="lesson-tree">
-              {structure.map(item => renderStructureItem(item))}
+              {memoizedStructure.map(item => renderStructureItem(item))}
             </div>
           )}
         </div>
@@ -202,6 +254,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       {isOpen && <div className="sidebar-overlay" onClick={onToggle} />}
     </>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

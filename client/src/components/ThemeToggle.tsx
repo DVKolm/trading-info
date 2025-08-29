@@ -6,7 +6,7 @@ interface ThemeToggleProps {
   onThemeChange: (theme: 'light' | 'dark') => void;
 }
 
-const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onThemeChange }) => {
+const ThemeToggle: React.FC<ThemeToggleProps> = React.memo(({ theme, onThemeChange }) => {
   const toggleTheme = () => {
     onThemeChange(theme === 'dark' ? 'light' : 'dark');
   };
@@ -24,6 +24,8 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onThemeChange }) => {
       )}
     </button>
   );
-};
+});
+
+ThemeToggle.displayName = 'ThemeToggle';
 
 export default ThemeToggle;

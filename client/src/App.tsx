@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { WebApp } from '@twa-dev/types';
-import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
-import SubscriptionCheck from './components/SubscriptionCheck';
 import ThemeToggle from './components/ThemeToggle';
 import { LessonStructure, Lesson } from './types';
 import './App.css';
+
+// Lazy load components that are not always visible
+const SubscriptionCheck = lazy(() => import('./components/SubscriptionCheck'));
+const Sidebar = lazy(() => import('./components/Sidebar'));
 
 declare global {
   interface Window {
@@ -87,16 +89,14 @@ const App: React.FC = () => {
     loadTheme();
   }, []);
 
-  // Set up scroll tracking when lesson changes
-  useEffect(() => {
-    if (!selectedLesson) return;
-
-    let scrollSaveTimer: NodeJS.Timeout;
-    
-    const handleScroll = () => {
-      // Debounce scroll position saving
-      clearTimeout(scrollSaveTimer);
-      scrollSaveTimer = setTimeout(() => {
+  // Throttled scroll handler for better performance
+  const throttledScrollHandler = useMemo(() => {
+    let isThrottled = false;
+    return (selectedLesson: Lesson) => {
+      if (isThrottled) return;
+      
+      isThrottled = true;
+      setTimeout(() => {
         const lessonViewer = document.querySelector('.lesson-viewer');
         const mainContent = document.querySelector('.main-content');
         const scrollTop = lessonViewer?.scrollTop || mainContent?.scrollTop || window.pageYOffset;
@@ -116,22 +116,29 @@ const App: React.FC = () => {
             return newPositions;
           });
         }
-      }, 1000); // Save every second after scroll stops
+        isThrottled = false;
+      }, 250); // Throttle to every 250ms instead of debouncing
     };
+  }, []);
+
+  // Set up scroll tracking when lesson changes
+  useEffect(() => {
+    if (!selectedLesson) return;
+
+    const handleScroll = () => throttledScrollHandler(selectedLesson);
 
     const lessonViewer = document.querySelector('.lesson-viewer');
     const mainContent = document.querySelector('.main-content');
     
     if (lessonViewer) {
-      lessonViewer.addEventListener('scroll', handleScroll);
+      lessonViewer.addEventListener('scroll', handleScroll, { passive: true });
     } else if (mainContent) {
-      mainContent.addEventListener('scroll', handleScroll);
+      mainContent.addEventListener('scroll', handleScroll, { passive: true });
     } else {
-      window.addEventListener('scroll', handleScroll);
+      window.addEventListener('scroll', handleScroll, { passive: true });
     }
 
     return () => {
-      clearTimeout(scrollSaveTimer);
       if (lessonViewer) {
         lessonViewer.removeEventListener('scroll', handleScroll);
       } else if (mainContent) {
@@ -140,7 +147,7 @@ const App: React.FC = () => {
         window.removeEventListener('scroll', handleScroll);
       }
     };
-  }, [selectedLesson]);
+  }, [selectedLesson, throttledScrollHandler]);
 
   const checkSubscriptionStatus = async () => {
     try {
@@ -471,6 +478,27 @@ const App: React.FC = () => {
     return selectedLesson ? getNextLesson(selectedLesson.path) : null;
   }, [selectedLesson?.path, getNextLesson]);
 
+  // Preload next lesson for better UX
+  useEffect(() => {
+    if (!nextLessonPath || lessonCache.has(nextLessonPath)) return;
+
+    const preloadTimer = setTimeout(async () => {
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+        const response = await fetch(`${apiUrl}/api/lessons/content/${nextLessonPath}`);
+        if (response.ok) {
+          const lessonData = await response.json();
+          lessonCache.set(nextLessonPath, lessonData);
+          console.log('Preloaded next lesson:', nextLessonPath);
+        }
+      } catch (error) {
+        console.log('Failed to preload next lesson:', error);
+      }
+    }, 2000); // Preload after 2 seconds of viewing current lesson
+
+    return () => clearTimeout(preloadTimer);
+  }, [nextLessonPath]);
+
   const loadLastReadLesson = () => {
     try {
       const savedLastRead = localStorage.getItem('last_read_lesson');
@@ -570,13 +598,17 @@ const App: React.FC = () => {
     const isSubscriptionError = error.includes('подписка') || error.includes('Telegram');
     
     if (isSubscriptionError) {
-      return <SubscriptionCheck 
-        onSubscriptionVerified={() => {
-          setError(null);
-          handleSubscriptionVerified();
-        }}
-        onBack={() => setError(null)}
-      />;
+      return (
+        <Suspense fallback={<div className="loading-container"><div className="loading-spinner">Loading...</div></div>}>
+          <SubscriptionCheck 
+            onSubscriptionVerified={() => {
+              setError(null);
+              handleSubscriptionVerified();
+            }}
+            onBack={() => setError(null)}
+          />
+        </Suspense>
+      );
     }
     
     return (
@@ -598,15 +630,17 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <ThemeToggle theme={theme} onThemeChange={handleThemeChange} />
-      <Sidebar
-        structure={lessonStructure}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onLessonSelect={handleLessonSelect}
-        onSearch={handleSearch}
-        isSubscribed={isSubscribed}
-        onSubscriptionRequired={() => setError('Для доступа к этому уроку требуется подписка на наш Telegram канал')}
-      />
+      <Suspense fallback={<div style={{ width: '300px', background: 'var(--bg-secondary)' }} />}>
+        <Sidebar
+          structure={lessonStructure}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          onLessonSelect={handleLessonSelect}
+          onSearch={handleSearch}
+          isSubscribed={isSubscribed}
+          onSubscriptionRequired={() => setError('Для доступа к этому уроку требуется подписка на наш Telegram канал')}
+        />
+      </Suspense>
       
       <main className={`main-content ${sidebarOpen ? 'sidebar-open' : ''}`}>
         {selectedLesson ? (

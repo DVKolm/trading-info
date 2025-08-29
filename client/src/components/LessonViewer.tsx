@@ -115,7 +115,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
   );
 };
 
-const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
+const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
 
   // Memoized process Obsidian-style internal links [[Link Name]] and images
   const processedContent = useMemo(() => {
@@ -349,6 +349,8 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
       </div>
     </div>
   );
-};
+});
+
+LessonViewer.displayName = 'LessonViewer';
 
 export default LessonViewer;
