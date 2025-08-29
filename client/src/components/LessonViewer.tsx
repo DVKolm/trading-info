@@ -27,8 +27,11 @@ interface LazyImageProps {
 const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => {
   const [loaded, setLoaded] = useState(() => imageCache.has(src));
   const [error, setError] = useState(false);
+  const [imageSize, setImageSize] = useState<{width: number, height: number} | null>(null);
 
-  const handleLoad = () => {
+  const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.target as HTMLImageElement;
+    setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
     imageCache.add(src);
     setLoaded(true);
   };
@@ -72,25 +75,21 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
       style={{
         position: 'relative',
         margin: '1rem 0',
+        minHeight: loaded ? 'auto' : '200px',
+        backgroundColor: loaded ? 'transparent' : 'var(--bg-tertiary)',
+        borderRadius: '8px',
+        border: loaded ? 'none' : '1px solid var(--border-color)',
+        display: loaded ? 'block' : 'flex',
+        alignItems: loaded ? 'normal' : 'center',
+        justifyContent: loaded ? 'normal' : 'center',
         ...style
       }}
     >
-      {!loaded && (
+      {!loaded && !error && (
         <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'var(--bg-tertiary)',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           color: 'var(--text-muted)',
           fontSize: '14px',
           textAlign: 'center',
-          border: '1px solid var(--border-color)',
           zIndex: 1
         }}>
           ⏳ Загрузка изображения...
@@ -106,9 +105,8 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
           maxWidth: '100%',
           height: 'auto',
           borderRadius: '8px',
-          display: 'block',
-          opacity: loaded ? 1 : 0,
-          transition: loaded ? 'opacity 0.2s ease-in-out' : 'none'
+          display: loaded ? 'block' : 'none',
+          transition: 'opacity 0.3s ease-in-out'
         }}
       />
     </div>
