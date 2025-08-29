@@ -27,18 +27,35 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
+    const abortController = new AbortController();
     const searchDelayed = setTimeout(async () => {
       if (searchQuery.trim()) {
         setIsSearching(true);
-        const results = await onSearch(searchQuery);
-        setSearchResults(results);
-        setIsSearching(false);
+        try {
+          const results = await onSearch(searchQuery);
+          if (!abortController.signal.aborted) {
+            setSearchResults(results);
+          }
+        } catch (error) {
+          if (!abortController.signal.aborted) {
+            console.error('Search error:', error);
+            setSearchResults([]);
+          }
+        } finally {
+          if (!abortController.signal.aborted) {
+            setIsSearching(false);
+          }
+        }
       } else {
         setSearchResults([]);
+        setIsSearching(false);
       }
     }, 300);
 
-    return () => clearTimeout(searchDelayed);
+    return () => {
+      clearTimeout(searchDelayed);
+      abortController.abort();
+    };
   }, [searchQuery, onSearch]);
 
   const toggleFolder = (folderId: string) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -117,48 +117,50 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 
 const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
 
-  // Process Obsidian-style internal links [[Link Name]] and images
-  const processObsidianLinks = (content: string) => {
-    // First, process image links ![[Image.png]] format
-    let processedContent = content.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
-      const cleanLinkText = linkText.trim();
-      
-      // This is definitely an image since it uses ![[]] syntax
-      if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-        const filename = cleanLinkText.replace(/\s+/g, '');
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-        const encodedFilename = btoa(filename);
+  // Memoized process Obsidian-style internal links [[Link Name]] and images
+  const processedContent = useMemo(() => {
+    const processObsidianLinks = (content: string) => {
+      // First, process image links ![[Image.png]] format
+      let processedContent = content.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
+        const cleanLinkText = linkText.trim();
         
-        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
-      }
-      
-      // If it's not an image, treat as regular link
-      return `[${cleanLinkText}](#internal-link-${encodeURIComponent(cleanLinkText)})`;
-    });
-    
-    // Then, process regular internal links [[Link Name]]
-    processedContent = processedContent.replace(/\[\[([^\]]+)\]\]/g, (match, linkText) => {
-      const cleanLinkText = linkText.trim();
-      
-      // Check if it's an image (has image extension)
-      if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-        const filename = cleanLinkText.replace(/\s+/g, '');
-        const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
-        const encodedFilename = btoa(filename);
+        // This is definitely an image since it uses ![[]] syntax
+        if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
+          const filename = cleanLinkText.replace(/\s+/g, '');
+          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          const encodedFilename = btoa(filename);
+          
+          return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
+        }
         
-        return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
-      }
+        // If it's not an image, treat as regular link
+        return `[${cleanLinkText}](#internal-link-${encodeURIComponent(cleanLinkText)})`;
+      });
       
-      // Create a clickable link that could trigger navigation to another lesson
-      return `[${cleanLinkText}](#internal-link-${encodeURIComponent(cleanLinkText)})`;
-    });
-    
-    return processedContent;
-  };
+      // Then, process regular internal links [[Link Name]]
+      processedContent = processedContent.replace(/\[\[([^\]]+)\]\]/g, (match, linkText) => {
+        const cleanLinkText = linkText.trim();
+        
+        // Check if it's an image (has image extension)
+        if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
+          const filename = cleanLinkText.replace(/\s+/g, '');
+          const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
+          const encodedFilename = btoa(filename);
+          
+          return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
+        }
+        
+        // Create a clickable link that could trigger navigation to another lesson
+        return `[${cleanLinkText}](#internal-link-${encodeURIComponent(cleanLinkText)})`;
+      });
+      
+      return processedContent;
+    };
 
-  const processedContent = processObsidianLinks(lesson.content);
+    return processObsidianLinks(lesson.content);
+  }, [lesson.content]);
 
-  const handleInternalLink = async (href: string) => {
+  const handleInternalLink = useCallback(async (href: string) => {
     if (href.startsWith('#internal-link-')) {
       const linkText = decodeURIComponent(href.replace('#internal-link-', ''));
       
@@ -177,7 +179,7 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, onNavigateToLesson,
         console.error('Error resolving internal link:', error);
       }
     }
-  };
+  }, [onNavigateToLesson]);
 
   return (
     <div className="lesson-viewer">

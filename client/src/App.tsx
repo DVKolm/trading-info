@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { WebApp } from '@twa-dev/types';
 import Sidebar from './components/Sidebar';
 import LessonViewer from './components/LessonViewer';
@@ -26,6 +26,33 @@ declare global {
     };
   }
 }
+
+// Lesson cache to prevent duplicate API calls
+const lessonCache = new Map<string, Lesson>();
+
+// Debounced localStorage operations
+let localStorageQueue = new Map<string, any>();
+let localStorageTimer: NodeJS.Timeout | null = null;
+
+const batchedLocalStorageSet = (key: string, value: any) => {
+  localStorageQueue.set(key, value);
+  
+  if (localStorageTimer) {
+    clearTimeout(localStorageTimer);
+  }
+  
+  localStorageTimer = setTimeout(() => {
+    localStorageQueue.forEach((val, k) => {
+      try {
+        localStorage.setItem(k, typeof val === 'string' ? val : JSON.stringify(val));
+      } catch (error) {
+        console.error(`Error saving to localStorage key "${k}":`, error);
+      }
+    });
+    localStorageQueue.clear();
+    localStorageTimer = null;
+  }, 500); // Batch localStorage writes every 500ms
+};
 
 const App: React.FC = () => {
   const [lessonStructure, setLessonStructure] = useState<LessonStructure[]>([]);
@@ -79,9 +106,9 @@ const App: React.FC = () => {
             const newPositions = new Map(prev);
             newPositions.set(selectedLesson.path, scrollTop);
             
-            // Save to localStorage
+            // Save to localStorage (batched)
             const positionsObj = Object.fromEntries(newPositions);
-            localStorage.setItem('lesson_scroll_positions', JSON.stringify(positionsObj));
+            batchedLocalStorageSet('lesson_scroll_positions', positionsObj);
             
             // Update last read lesson info
             updateLastReadLesson(selectedLesson.path, selectedLesson, scrollTop);
@@ -190,9 +217,9 @@ const App: React.FC = () => {
       const newPositions = new Map(prev);
       newPositions.set(lessonPath, scrollTop);
       
-      // Save to localStorage
+      // Save to localStorage (batched)
       const positionsObj = Object.fromEntries(newPositions);
-      localStorage.setItem('lesson_scroll_positions', JSON.stringify(positionsObj));
+      batchedLocalStorageSet('lesson_scroll_positions', positionsObj);
       
       return newPositions;
     });
@@ -217,12 +244,36 @@ const App: React.FC = () => {
     // Don't restore position automatically - let the global continue reading handle it
   };
 
-  const handleLessonSelect = async (lessonPath: string, scrollToPosition?: number) => {
+  const handleLessonSelect = useCallback(async (lessonPath: string, scrollToPosition?: number) => {
     try {
       // Save scroll position of current lesson before switching
       if (selectedLesson && selectedLesson.path !== lessonPath) {
         saveScrollPosition(selectedLesson.path);
         setLessonHistory(prev => [...prev, selectedLesson.path]);
+      }
+      
+      // Check cache first
+      const cachedLesson = lessonCache.get(lessonPath);
+      if (cachedLesson) {
+        setSelectedLesson(cachedLesson);
+        setSidebarOpen(false);
+        updateLastReadLesson(lessonPath, cachedLesson, scrollToPosition || 0);
+        
+        // Scroll to specified position or top
+        setTimeout(() => {
+          const lessonViewer = document.querySelector('.lesson-viewer');
+          const mainContent = document.querySelector('.main-content');
+          const targetPosition = scrollToPosition || 0;
+          
+          if (lessonViewer) {
+            lessonViewer.scrollTop = targetPosition;
+          } else if (mainContent) {
+            mainContent.scrollTop = targetPosition;
+          } else {
+            window.scrollTo(0, targetPosition);
+          }
+        }, 100);
+        return;
       }
       
       const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
@@ -231,6 +282,10 @@ const App: React.FC = () => {
         throw new Error('Failed to fetch lesson content');
       }
       const lessonData = await response.json();
+      
+      // Cache the lesson
+      lessonCache.set(lessonPath, lessonData);
+      
       setSelectedLesson(lessonData);
       setSidebarOpen(false); // Close sidebar on mobile after selection
       
@@ -254,9 +309,9 @@ const App: React.FC = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lesson');
     }
-  };
+  }, [selectedLesson?.path]);
 
-  const handleSearch = async (query: string): Promise<any[]> => {
+  const handleSearch = useCallback(async (query: string): Promise<any[]> => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
       const response = await fetch(`${apiUrl}/api/lessons/search?q=${encodeURIComponent(query)}`);
@@ -271,7 +326,7 @@ const App: React.FC = () => {
       console.error('Search error:', err);
       return [];
     }
-  };
+  }, []);
 
   const handleSubscriptionVerified = () => {
     setIsSubscribed(true);
@@ -306,57 +361,64 @@ const App: React.FC = () => {
     }
   };
 
-  // Function to get next lesson based on lesson structure - stay within the same tier
-  const getNextLesson = (currentPath: string): string | null => {
-    // Determine which tier the current lesson belongs to
-    const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
-    const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
-    
-const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
-      const result: LessonStructure[] = [];
-      structure.forEach(item => {
-        if (item.type === 'file') {
-          result.push(item);
-        }
-        if (item.children) {
-          result.push(...flattenStructure(item.children));
-        }
-      });
-      return result;
-    };
+  // Memoized function to get next lesson based on lesson structure - stay within the same tier
+  const getNextLesson = useMemo(() => {
+    return (currentPath: string): string | null => {
+      // Determine which tier the current lesson belongs to
+      const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
+      const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
+      
+      const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
+        const result: LessonStructure[] = [];
+        structure.forEach(item => {
+          if (item.type === 'file') {
+            result.push(item);
+          }
+          if (item.children) {
+            result.push(...flattenStructure(item.children));
+          }
+        });
+        return result;
+      };
 
-    const allLessons = flattenStructure(lessonStructure);
-    
-    // Filter lessons from the same tier only
-    const sameTierLessons = allLessons.filter(lesson => {
-      // Check if this is a main lesson file (path contains "Урок X" and filename starts with "Урок X")
-      const pathMatch = lesson.path.match(/Урок (\d+)/);
-      const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
-      const isMainLesson = pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+      const allLessons = flattenStructure(lessonStructure);
       
-      if (!isMainLesson) return false;
-      
-      // Filter by tier
-      if (isFreeTier) {
-        return lesson.path.includes('Начальный уровень') || lesson.path.includes('📚');
-      } else if (isPremiumTier) {
-        return lesson.path.includes('Средний уровень') || lesson.path.includes('🎓');
+      // Filter lessons from the same tier only
+      const sameTierLessons = allLessons.filter(lesson => {
+        // Check if this is a main lesson file (path contains "Урок X" and filename starts with "Урок X")
+        const pathMatch = lesson.path.match(/Урок (\d+)/);
+        const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
+        const isMainLesson = pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+        
+        if (!isMainLesson) return false;
+        
+        // Filter by tier
+        if (isFreeTier) {
+          return lesson.path.includes('Начальный уровень') || lesson.path.includes('📚');
+        } else if (isPremiumTier) {
+          return lesson.path.includes('Средний уровень') || lesson.path.includes('🎓');
+        }
+        
+        return false;
+      }).sort((a, b) => {
+        const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
+        const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
+        return aNum - bNum;
+      });
+
+      const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
+      if (currentIndex >= 0 && currentIndex < sameTierLessons.length - 1) {
+        return sameTierLessons[currentIndex + 1].path;
       }
       
-      return false;
-    }).sort((a, b) => {
-      const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
-      const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
-      return aNum - bNum;
-    });
+      return null;
+    };
+  }, [lessonStructure]);
 
-    const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
-    if (currentIndex >= 0 && currentIndex < sameTierLessons.length - 1) {
-      return sameTierLessons[currentIndex + 1].path;
-    }
-    
-    return null;
-  };
+  // Memoize next lesson path
+  const nextLessonPath = useMemo(() => {
+    return selectedLesson ? getNextLesson(selectedLesson.path) : null;
+  }, [selectedLesson?.path, getNextLesson]);
 
   const loadLastReadLesson = () => {
     try {
@@ -402,7 +464,7 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
     };
     
     try {
-      localStorage.setItem('last_read_lesson', JSON.stringify(lastRead));
+      batchedLocalStorageSet('last_read_lesson', lastRead);
       setLastReadLesson(lastRead);
     } catch (error) {
       console.error('Error saving last read lesson:', error);
@@ -439,7 +501,7 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     try {
-      localStorage.setItem('app_theme', newTheme);
+      batchedLocalStorageSet('app_theme', newTheme);
     } catch (error) {
       console.error('Error saving theme:', error);
     }
@@ -501,7 +563,7 @@ const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
             lesson={selectedLesson} 
             onNavigateToLesson={handleLessonSelect}
             onBack={lessonHistory.length > 0 ? handleBackNavigation : undefined}
-            nextLessonPath={getNextLesson(selectedLesson.path)}
+            nextLessonPath={nextLessonPath}
           />
         ) : (
           <div className="welcome-screen">
