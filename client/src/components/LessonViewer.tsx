@@ -6,7 +6,6 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
-import { sanitizeLessonTitle } from '../utils/encodingUtils';
 
 interface LessonViewerProps {
   lesson: Lesson;
