@@ -755,6 +755,28 @@ code {
   }
 }
 
+/* Different particle styles */
+.particle-1, .particle-6, .particle-11 { 
+  width: 6px; height: 6px; 
+  background: linear-gradient(45deg, #7c3aed, #a855f7);
+}
+.particle-2, .particle-7, .particle-12 { 
+  width: 3px; height: 3px; 
+  background: linear-gradient(45deg, #ec4899, #f97316);
+}
+.particle-3, .particle-8, .particle-13 { 
+  width: 5px; height: 5px; 
+  background: linear-gradient(45deg, #06b6d4, #3b82f6);
+}
+.particle-4, .particle-9, .particle-14 { 
+  width: 4px; height: 4px; 
+  background: linear-gradient(45deg, #10b981, #84cc16);
+}
+.particle-5, .particle-10, .particle-15 { 
+  width: 7px; height: 7px; 
+  background: linear-gradient(45deg, #f59e0b, #eab308);
+}
+
 /* Animated waves */
 .animated-waves {
   position: absolute;

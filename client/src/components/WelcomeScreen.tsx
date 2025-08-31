@@ -34,6 +34,22 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   return (
     <div className={`welcome-screen ${welcomeAnimationsEnabled ? '' : 'no-animations'} ${isVisible ? 'visible' : ''}`}>
+      {/* Плавающие частицы - только при включенных анимациях */}
+      {welcomeAnimationsEnabled && isVisible && (
+        <div className="particles-container">
+          {Array.from({ length: 15 }, (_, i) => (
+            <div 
+              key={i} 
+              className={`particle particle-${i + 1}`} 
+              style={{
+                animationDelay: `${i * 0.3}s`,
+                left: `${Math.random() * 100}%`,
+                animationDuration: `${4 + Math.random() * 6}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Анимированные волны на фоне - только при анимациях */}
       {welcomeAnimationsEnabled && (
