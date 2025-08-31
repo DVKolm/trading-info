@@ -755,26 +755,30 @@ code {
   }
 }
 
-/* Different particle styles */
-.particle-1, .particle-6, .particle-11 { 
+/* Different particle styles - all in app colors */
+.particle-1, .particle-7 { 
   width: 6px; height: 6px; 
-  background: linear-gradient(45deg, #7c3aed, #a855f7);
+  background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
 }
-.particle-2, .particle-7, .particle-12 { 
+.particle-2, .particle-8 { 
   width: 3px; height: 3px; 
-  background: linear-gradient(45deg, #ec4899, #f97316);
+  background: var(--accent-primary);
 }
-.particle-3, .particle-8, .particle-13 { 
+.particle-3, .particle-9 { 
   width: 5px; height: 5px; 
-  background: linear-gradient(45deg, #06b6d4, #3b82f6);
+  background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
 }
-.particle-4, .particle-9, .particle-14 { 
+.particle-4, .particle-10 { 
   width: 4px; height: 4px; 
-  background: linear-gradient(45deg, #10b981, #84cc16);
+  background: var(--accent-secondary);
 }
-.particle-5, .particle-10, .particle-15 { 
+.particle-5, .particle-11 { 
   width: 7px; height: 7px; 
-  background: linear-gradient(45deg, #f59e0b, #eab308);
+  background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+}
+.particle-6, .particle-12 { 
+  width: 5px; height: 5px; 
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
 }
 
 /* Animated waves */
@@ -953,7 +957,11 @@ code {
   font-weight: 400;
   margin-bottom: 3rem;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  line-height: 1.6;
+  line-height: 1.8;
+  text-align: center;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .subtitle-line {
