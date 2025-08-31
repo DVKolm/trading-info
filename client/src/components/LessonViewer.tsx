@@ -186,6 +186,31 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     <div className="lesson-viewer" ref={lessonViewerRef}>
 
       <div className="lesson-header">
+        {/* Header Navigation */}
+        <div className="lesson-header-nav">
+          {onBack && (
+            <button 
+              className="header-nav-button back-button"
+              onClick={onBack}
+              title="Вернуться к предыдущему уроку"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
+          
+          <div className="header-nav-spacer"></div>
+          
+          {nextLessonPath && onNavigateToLesson && (
+            <button 
+              className="header-nav-button next-button"
+              onClick={() => onNavigateToLesson(nextLessonPath)}
+              title="Перейти к следующему уроку"
+            >
+              <ArrowRight size={16} />
+            </button>
+          )}
+        </div>
+
         {(lesson.frontmatter?.title || (lesson as any).title) && (
           <h1 className="lesson-title">{sanitizeLessonTitle(lesson.frontmatter?.title || (lesson as any).title)}</h1>
         )}
