@@ -76,13 +76,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <div className="button-ripple"></div>
         </button>
 
-        {/* Дополнительные декоративные элементы */}
-        <div className="decorative-elements">
-          <div className="floating-icon icon-1">📈</div>
-          <div className="floating-icon icon-2">💎</div>
-          <div className="floating-icon icon-3">⚡</div>
-          <div className="floating-icon icon-4">🎯</div>
-        </div>
       </div>
     </div>
   );

@@ -1023,67 +1023,6 @@ code {
   }
 }
 
-/* Floating icons */
-.decorative-elements {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.floating-icon {
-  position: absolute;
-  font-size: 2rem;
-  opacity: 0.6;
-  animation: floatIcon 6s infinite ease-in-out;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-}
-
-.icon-1 {
-  top: 15%;
-  left: 10%;
-  animation-delay: 0s;
-}
-
-.icon-2 {
-  top: 25%;
-  right: 15%;
-  animation-delay: 1.5s;
-}
-
-.icon-3 {
-  bottom: 30%;
-  left: 15%;
-  animation-delay: 3s;
-}
-
-.icon-4 {
-  bottom: 20%;
-  right: 10%;
-  animation-delay: 4.5s;
-}
-
-@keyframes floatIcon {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-    opacity: 0.4;
-  }
-  25% {
-    transform: translateY(-15px) rotate(5deg);
-    opacity: 0.7;
-  }
-  50% {
-    transform: translateY(-25px) rotate(-3deg);
-    opacity: 0.9;
-  }
-  75% {
-    transform: translateY(-10px) rotate(8deg);
-    opacity: 0.6;
-  }
-}
 
 /* Disable all new animations when animations are turned off */
 .welcome-screen.no-animations .particle,
@@ -1091,8 +1030,7 @@ code {
 .welcome-screen.no-animations .title-word,
 .welcome-screen.no-animations .title-underline,
 .welcome-screen.no-animations .subtitle-line,
-.welcome-screen.no-animations .animated-button,
-.welcome-screen.no-animations .floating-icon {
+.welcome-screen.no-animations .animated-button {
   animation: none !important;
   opacity: 1 !important;
   transform: none !important;
