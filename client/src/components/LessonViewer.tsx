@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
 import { sanitizeLessonTitle } from '../utils/encodingUtils';
@@ -13,6 +13,7 @@ interface LessonViewerProps {
   onNavigateToLesson?: (lessonPath: string) => void;
   onBack?: () => void;
   nextLessonPath?: string | null;
+  onSidebarToggle?: () => void;
 }
 
 // Image cache to prevent reloading
@@ -93,7 +94,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
   );
 };
 
-const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
+const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath, onSidebarToggle }) => {
   const { handleScroll } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
 
@@ -186,31 +187,12 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     <div className="lesson-viewer" ref={lessonViewerRef}>
 
       <div className="lesson-header">
-        {/* Header Navigation */}
-        <div className="lesson-header-nav">
-          {onBack && (
-            <button 
-              className="header-nav-button back-button"
-              onClick={onBack}
-              title="Вернуться к предыдущему уроку"
-            >
-              <ArrowLeft size={16} />
-            </button>
-          )}
-          
-          <div className="header-nav-spacer"></div>
-          
-          {nextLessonPath && onNavigateToLesson && (
-            <button 
-              className="header-nav-button next-button"
-              onClick={() => onNavigateToLesson(nextLessonPath)}
-              title="Перейти к следующему уроку"
-            >
-              <ArrowRight size={16} />
-            </button>
-          )}
-        </div>
-
+        {onSidebarToggle && (
+          <button className="lesson-sidebar-toggle" onClick={onSidebarToggle}>
+            <Menu size={20} />
+          </button>
+        )}
+        
         {(lesson.frontmatter?.title || (lesson as any).title) && (
           <h1 className="lesson-title">{sanitizeLessonTitle(lesson.frontmatter?.title || (lesson as any).title)}</h1>
         )}

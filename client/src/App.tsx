@@ -231,7 +231,7 @@ const App: React.FC = () => {
 
   // Main app render
   return (
-    <div className="app">
+    <div className="app" data-lesson-active={!!selectedLesson}>
       <FloatingActionButton
         theme={theme}
         onThemeChange={handleThemeChange}
@@ -270,6 +270,7 @@ const App: React.FC = () => {
             onNavigateToLesson={handleLessonSelect}
             onBack={lessonHistory.length > 0 ? handleBackNavigation : undefined}
             nextLessonPath={nextLessonPath}
+            onSidebarToggle={() => setSidebarOpen(true)}
           />
         ) : (
           <WelcomeScreen
