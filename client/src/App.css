@@ -1957,20 +1957,21 @@ code {
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--accent-primary);
-  color: white;
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: none;
 }
 
 .floating-nav-btn:hover {
-  background: var(--accent-secondary);
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+  background: var(--accent-primary);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
 }
 
 .floating-nav-btn:active {
