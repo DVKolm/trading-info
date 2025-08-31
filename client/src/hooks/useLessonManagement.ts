@@ -112,11 +112,8 @@ export const useLessonManagement = () => {
     }
   }, []);
 
-  // Helper function to get ordered lessons from same tier
-  const getOrderedLessons = useCallback((currentPath: string) => {
-    const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
-    const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
-    
+  // Helper function to get ordered lessons (ALL lessons, not just same tier)
+  const getOrderedLessons = useCallback(() => {
     const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
       const result: LessonStructure[] = [];
       structure.forEach(item => {
@@ -132,37 +129,49 @@ export const useLessonManagement = () => {
 
     const allLessons = flattenStructure(lessonStructure);
     
-    return allLessons.filter(lesson => {
-      const pathMatch = lesson.path.match(/Урок (\d+)/);
-      const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
-      const isMainLesson = pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+    // Filter main lesson files only (not checklists, settings, etc.)
+    const filteredLessons = allLessons.filter(lesson => {
+      // Skip non-markdown files
+      if (!lesson.filename?.endsWith('.md')) return false;
       
-      if (!isMainLesson) return false;
-      
-      if (isFreeTier) {
-        return lesson.path.includes('Начальный уровень') || lesson.path.includes('📚');
-      } else if (isPremiumTier) {
-        return lesson.path.includes('Средний уровень') || lesson.path.includes('🎓');
+      // Skip obvious non-lesson files (like checklists)
+      if (lesson.filename.includes('Чек-лист') || lesson.filename.includes('Настройки') || lesson.filename.includes('Сигналы')) {
+        return false;
       }
       
-      return false;
-    }).sort((a, b) => {
+      // Check if it has lesson number in the path
+      const pathMatch = lesson.path.match(/Урок (\d+)/);
+      if (!pathMatch) return false;
+      
+      // Check if filename also has lesson number
+      const filenameMatch = lesson.filename.match(/Урок (\d+)/);
+      if (!filenameMatch) return false;
+      
+      // Check if it's the main lesson file (same lesson number in path and filename)
+      const isMainLesson = pathMatch[1] === filenameMatch[1];
+      return isMainLesson;
+    });
+    
+    // Sort by lesson number (across ALL tiers)
+    const sortedLessons = filteredLessons.sort((a, b) => {
       const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
       const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
       return aNum - bNum;
     });
+    
+    return sortedLessons;
   }, [lessonStructure]);
 
   // Get next lesson path
   const getNextLesson = useMemo(() => {
     return (currentPath: string): string | null => {
-      const sameTierLessons = getOrderedLessons(currentPath);
-      const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
+      const allLessons = getOrderedLessons();
+      const currentIndex = allLessons.findIndex(lesson => lesson.path === currentPath);
       
-      if (currentIndex >= 0 && currentIndex < sameTierLessons.length - 1) {
-        return sameTierLessons[currentIndex + 1].path;
+      if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
+        const nextLesson = allLessons[currentIndex + 1];
+        return nextLesson.path;
       }
-      
       return null;
     };
   }, [getOrderedLessons]);
@@ -170,24 +179,28 @@ export const useLessonManagement = () => {
   // Get previous lesson path
   const getPrevLesson = useMemo(() => {
     return (currentPath: string): string | null => {
-      const sameTierLessons = getOrderedLessons(currentPath);
-      const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
+      const allLessons = getOrderedLessons();
+      const currentIndex = allLessons.findIndex(lesson => lesson.path === currentPath);
       
       if (currentIndex > 0) {
-        return sameTierLessons[currentIndex - 1].path;
+        const prevLesson = allLessons[currentIndex - 1];
+        return prevLesson.path;
       }
-      
       return null;
     };
   }, [getOrderedLessons]);
 
   // Memoize lesson paths
   const nextLessonPath = useMemo(() => {
-    return selectedLesson ? getNextLesson(selectedLesson.path) : null;
+    if (!selectedLesson) return null;
+    
+    return getNextLesson(selectedLesson.path);
   }, [selectedLesson, getNextLesson]);
 
   const prevLessonPath = useMemo(() => {
-    return selectedLesson ? getPrevLesson(selectedLesson.path) : null;
+    if (!selectedLesson) return null;
+    
+    return getPrevLesson(selectedLesson.path);
   }, [selectedLesson, getPrevLesson]);
 
   // Preload next lesson for better UX

@@ -142,6 +142,36 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     return processObsidianLinks(lesson.content);
   }, [lesson.content]);
 
+  // Determine if this is a sub-file (checklist, settings, etc.) and find parent lesson
+  const isSubFile = useMemo(() => {
+    return lesson.filename?.includes('Чек-лист') || 
+           lesson.filename?.includes('Настройки') || 
+           lesson.filename?.includes('Сигналы') ||
+           (lesson.path.includes('Урок') && !lesson.filename?.match(/^Урок \d+\./));
+  }, [lesson.filename, lesson.path]);
+
+  const parentLessonPath = useMemo(() => {
+    if (!isSubFile) return null;
+    
+    // Extract lesson number from path
+    const lessonMatch = lesson.path.match(/Урок (\d+)/);
+    if (!lessonMatch) return null;
+    
+    const lessonNumber = lessonMatch[1];
+    const lessonDir = lesson.path.substring(0, lesson.path.lastIndexOf('/'));
+    
+    // Find the main lesson file in the same directory - try different patterns
+    const basePath = lessonDir.split('/').pop() || '';
+    const possibleMainFiles = [
+      `${lessonDir}/Урок ${lessonNumber}. ${basePath.replace(/^Урок \d+\.\s*/, '')}.md`,
+      `${lessonDir}/Урок ${lessonNumber}.md`,
+      `${lessonDir}/${basePath}.md`
+    ];
+    
+    // Return the first possible match (we'll validate it exists when navigating)
+    return possibleMainFiles[0];
+  }, [isSubFile, lesson.path]);
+
   const handleInternalLink = useCallback(async (href: string) => {
     if (href.startsWith('#internal-link-')) {
       const linkText = decodeURIComponent(href.replace('#internal-link-', ''));
@@ -309,6 +339,18 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         </ReactMarkdown>
       </div>
 
+
+      {/* Back to Main Lesson Button (for sub-files like checklists) */}
+      {isSubFile && parentLessonPath && onNavigateToLesson && (
+        <button 
+          className="back-to-lesson-btn"
+          onClick={() => onNavigateToLesson(parentLessonPath)}
+          title="Назад к уроку"
+        >
+          <ArrowLeft size={20} />
+          <span>Назад к уроку</span>
+        </button>
+      )}
 
       {/* Floating Navigation Buttons */}
       <div className="floating-lesson-nav">
