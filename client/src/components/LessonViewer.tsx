@@ -186,13 +186,13 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     <div className="lesson-viewer" ref={lessonViewerRef}>
 
       <div className="lesson-header">
-        {lesson.frontmatter.title && (
-          <h1 className="lesson-title">{sanitizeLessonTitle(lesson.frontmatter.title)}</h1>
+        {(lesson.frontmatter?.title || lesson.title) && (
+          <h1 className="lesson-title">{sanitizeLessonTitle(lesson.frontmatter?.title || lesson.title)}</h1>
         )}
-        {lesson.frontmatter.description && (
-          <p className="lesson-description">{lesson.frontmatter.description}</p>
+        {(lesson.frontmatter?.description || lesson.description) && (
+          <p className="lesson-description">{lesson.frontmatter?.description || lesson.description}</p>
         )}
-        {lesson.frontmatter.tags && (
+        {lesson.frontmatter?.tags && (
           <div className="lesson-tags">
             {lesson.frontmatter.tags.map((tag: string, index: number) => (
               <span key={index} className="tag">
