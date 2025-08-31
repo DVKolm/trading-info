@@ -28,12 +28,10 @@ interface LazyImageProps {
 }
 
 const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => {
-  const [loaded, setLoaded] = useState(() => imageCache.has(src));
   const [error, setError] = useState(false);
 
   const handleLoad = () => {
     imageCache.add(src);
-    setLoaded(true);
   };
 
   const handleError = () => {
