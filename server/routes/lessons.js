@@ -34,10 +34,19 @@ router.get('/structure', async (req, res) => {
         let structure;
         try {
             structure = await enhancedLessonService.getLessonStructure();
-            logger.info('✅ Using database for lesson structure');
+            
+            // If database returns empty structure, use file system
+            if (!structure || structure.length === 0) {
+                logger.info('Database returned empty structure, falling back to file system');
+                structure = await lessonService.getLessonStructure();
+                logger.info('✅ Using file system for lesson structure');
+            } else {
+                logger.info('✅ Using database for lesson structure');
+            }
         } catch (dbError) {
             logger.warn('Database unavailable, falling back to file system:', dbError.message);
             structure = await lessonService.getLessonStructure();
+            logger.info('✅ Using file system for lesson structure (error fallback)');
         }
         
         logger.info('Lessons structure retrieved successfully', {
@@ -94,14 +103,23 @@ router.get('/content/*', async (req, res) => {
 });
 
 // Resolve internal lesson link
-router.get('/resolve/:linkName', async (req, res) => {
+router.get('/resolve', async (req, res) => {
     try {
-        const linkName = decodeURIComponent(req.params.linkName);
-        const result = lessonService.resolveLessonLink(linkName);
+        const linkName = req.query.name;
+        
+        if (!linkName) {
+            return res.status(400).json({ error: 'Link name is required' });
+        }
+        
+        logger.info('Resolving internal link:', linkName);
+        const result = await lessonService.resolveLessonLink(linkName);
         res.json(result);
     } catch (error) {
         logger.error('Error resolving internal link:', error);
-        res.status(500).json({ error: 'Failed to resolve internal link' });
+        res.status(500).json({ 
+            error: 'Internal server error',
+            message: `Failed to resolve link`
+        });
     }
 });
 

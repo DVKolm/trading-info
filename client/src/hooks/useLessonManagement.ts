@@ -112,60 +112,83 @@ export const useLessonManagement = () => {
     }
   }, []);
 
+  // Helper function to get ordered lessons from same tier
+  const getOrderedLessons = useCallback((currentPath: string) => {
+    const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
+    const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
+    
+    const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
+      const result: LessonStructure[] = [];
+      structure.forEach(item => {
+        if (item.type === 'file') {
+          result.push(item);
+        }
+        if (item.children) {
+          result.push(...flattenStructure(item.children));
+        }
+      });
+      return result;
+    };
+
+    const allLessons = flattenStructure(lessonStructure);
+    
+    return allLessons.filter(lesson => {
+      const pathMatch = lesson.path.match(/Урок (\d+)/);
+      const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
+      const isMainLesson = pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
+      
+      if (!isMainLesson) return false;
+      
+      if (isFreeTier) {
+        return lesson.path.includes('Начальный уровень') || lesson.path.includes('📚');
+      } else if (isPremiumTier) {
+        return lesson.path.includes('Средний уровень') || lesson.path.includes('🎓');
+      }
+      
+      return false;
+    }).sort((a, b) => {
+      const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
+      const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
+      return aNum - bNum;
+    });
+  }, [lessonStructure]);
+
   // Get next lesson path
   const getNextLesson = useMemo(() => {
     return (currentPath: string): string | null => {
-      const isFreeTier = currentPath.includes('Начальный уровень') || currentPath.includes('📚');
-      const isPremiumTier = currentPath.includes('Средний уровень') || currentPath.includes('🎓');
-      
-      const flattenStructure = (structure: LessonStructure[]): LessonStructure[] => {
-        const result: LessonStructure[] = [];
-        structure.forEach(item => {
-          if (item.type === 'file') {
-            result.push(item);
-          }
-          if (item.children) {
-            result.push(...flattenStructure(item.children));
-          }
-        });
-        return result;
-      };
-
-      const allLessons = flattenStructure(lessonStructure);
-      
-      const sameTierLessons = allLessons.filter(lesson => {
-        const pathMatch = lesson.path.match(/Урок (\d+)/);
-        const filenameMatch = lesson.filename?.match(/Урок (\d+)/);
-        const isMainLesson = pathMatch && filenameMatch && pathMatch[1] === filenameMatch[1];
-        
-        if (!isMainLesson) return false;
-        
-        if (isFreeTier) {
-          return lesson.path.includes('Начальный уровень') || lesson.path.includes('📚');
-        } else if (isPremiumTier) {
-          return lesson.path.includes('Средний уровень') || lesson.path.includes('🎓');
-        }
-        
-        return false;
-      }).sort((a, b) => {
-        const aNum = parseInt(a.path.match(/Урок (\d+)/)?.[1] || '0');
-        const bNum = parseInt(b.path.match(/Урок (\d+)/)?.[1] || '0');
-        return aNum - bNum;
-      });
-
+      const sameTierLessons = getOrderedLessons(currentPath);
       const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
+      
       if (currentIndex >= 0 && currentIndex < sameTierLessons.length - 1) {
         return sameTierLessons[currentIndex + 1].path;
       }
       
       return null;
     };
-  }, [lessonStructure]);
+  }, [getOrderedLessons]);
 
-  // Memoize next lesson path
+  // Get previous lesson path
+  const getPrevLesson = useMemo(() => {
+    return (currentPath: string): string | null => {
+      const sameTierLessons = getOrderedLessons(currentPath);
+      const currentIndex = sameTierLessons.findIndex(lesson => lesson.path === currentPath);
+      
+      if (currentIndex > 0) {
+        return sameTierLessons[currentIndex - 1].path;
+      }
+      
+      return null;
+    };
+  }, [getOrderedLessons]);
+
+  // Memoize lesson paths
   const nextLessonPath = useMemo(() => {
     return selectedLesson ? getNextLesson(selectedLesson.path) : null;
   }, [selectedLesson, getNextLesson]);
+
+  const prevLessonPath = useMemo(() => {
+    return selectedLesson ? getPrevLesson(selectedLesson.path) : null;
+  }, [selectedLesson, getPrevLesson]);
 
   // Preload next lesson for better UX
   useEffect(() => {
@@ -191,6 +214,7 @@ export const useLessonManagement = () => {
     error,
     lessonHistory,
     nextLessonPath,
+    prevLessonPath,
     
     // Actions
     handleLessonSelect,

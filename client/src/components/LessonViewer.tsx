@@ -11,8 +11,8 @@ import { sanitizeLessonTitle } from '../utils/encodingUtils';
 interface LessonViewerProps {
   lesson: Lesson;
   onNavigateToLesson?: (lessonPath: string) => void;
-  onBack?: () => void;
   nextLessonPath?: string | null;
+  prevLessonPath?: string | null;
   onSidebarToggle?: () => void;
 }
 
@@ -92,7 +92,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
   );
 };
 
-const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath, onSidebarToggle }) => {
+const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, nextLessonPath, prevLessonPath, onSidebarToggle }) => {
   const { handleScroll } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
 
@@ -149,15 +149,17 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
       
       try {
         const apiUrl = process.env.REACT_APP_API_URL || '';
-        const response = await fetch(`${apiUrl}/api/lessons/resolve/${encodeURIComponent(linkText)}`);
+        const response = await fetch(`${apiUrl}/api/lessons/resolve?name=${encodeURIComponent(linkText)}`);
         const data = await response.json();
         
         if (data.found && onNavigateToLesson) {
           onNavigateToLesson(data.path);
         } else {
           // Could show a toast or notification here
+          console.warn('Internal link not found:', linkText);
         }
       } catch (error) {
+        console.error('Failed to resolve internal link:', error);
       }
     }
   }, [onNavigateToLesson]);
@@ -308,39 +310,13 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         </ReactMarkdown>
       </div>
 
-      {/* Navigation Panel */}
-      <div className="lesson-navigation">
-        {onBack && (
-          <button 
-            className="nav-button back-button"
-            onClick={onBack}
-            title="Вернуться к предыдущему уроку"
-          >
-            <ArrowLeft size={18} />
-            Назад
-          </button>
-        )}
-        
-        <div className="nav-spacer"></div>
-        
-        {nextLessonPath && onNavigateToLesson && (
-          <button 
-            className="nav-button next-button"
-            onClick={() => onNavigateToLesson(nextLessonPath)}
-            title="Перейти к следующему уроку"
-          >
-            Следующий урок
-            <ArrowRight size={18} />
-          </button>
-        )}
-      </div>
 
       {/* Floating Navigation Buttons */}
       <div className="floating-lesson-nav">
-        {onBack && (
+        {prevLessonPath && onNavigateToLesson && (
           <button 
             className="floating-nav-btn prev-btn"
-            onClick={onBack}
+            onClick={() => onNavigateToLesson(prevLessonPath)}
             title="Предыдущий урок"
           >
             <ArrowLeft size={20} />

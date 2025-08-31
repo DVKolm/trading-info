@@ -61,6 +61,7 @@ const App: React.FC = () => {
     error,
     lessonHistory,
     nextLessonPath,
+    prevLessonPath,
     handleLessonSelect: originalHandleLessonSelect,
     handleBackNavigation,
     handleSearch,
@@ -268,8 +269,8 @@ const App: React.FC = () => {
           <LessonViewer 
             lesson={selectedLesson} 
             onNavigateToLesson={handleLessonSelect}
-            onBack={lessonHistory.length > 0 ? handleBackNavigation : undefined}
             nextLessonPath={nextLessonPath}
+            prevLessonPath={prevLessonPath}
             onSidebarToggle={() => setSidebarOpen(true)}
           />
         ) : (

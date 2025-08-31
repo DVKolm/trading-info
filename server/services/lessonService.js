@@ -225,7 +225,12 @@ class LessonService {
     /**
      * Resolve internal lesson link
      */
-    resolveLessonLink(linkName) {
+    async resolveLessonLink(linkName) {
+        // Build lesson map if it's empty
+        if (lessonMap.size === 0) {
+            await this.buildLessonMap();
+        }
+        
         let lessonPath = lessonMap.get(linkName);
         
         if (!lessonPath) {
