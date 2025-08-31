@@ -187,12 +187,6 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     <div className="lesson-viewer" ref={lessonViewerRef}>
 
       <div className="lesson-header">
-        {onSidebarToggle && (
-          <button className="lesson-sidebar-toggle" onClick={onSidebarToggle}>
-            <Menu size={20} />
-          </button>
-        )}
-        
         {(lesson.frontmatter?.title || (lesson as any).title) && (
           <h1 className="lesson-title">{sanitizeLessonTitle(lesson.frontmatter?.title || (lesson as any).title)}</h1>
         )}
@@ -359,6 +353,36 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
           </button>
         )}
       </div>
+
+      {/* Floating Navigation Buttons */}
+      <div className="floating-lesson-nav">
+        {onBack && (
+          <button 
+            className="floating-nav-btn prev-btn"
+            onClick={onBack}
+            title="Предыдущий урок"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+        
+        {nextLessonPath && onNavigateToLesson && (
+          <button 
+            className="floating-nav-btn next-btn"
+            onClick={() => onNavigateToLesson(nextLessonPath)}
+            title="Следующий урок"
+          >
+            <ArrowRight size={20} />
+          </button>
+        )}
+      </div>
+
+      {/* Floating Sidebar Toggle */}
+      {onSidebarToggle && (
+        <button className="floating-sidebar-toggle" onClick={onSidebarToggle}>
+          <Menu size={20} />
+        </button>
+      )}
 
     </div>
   );
