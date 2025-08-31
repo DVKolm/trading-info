@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 // Debounced localStorage operations
 let localStorageQueue = new Map<string, any>();

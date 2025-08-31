@@ -26,7 +26,16 @@
       "Bash(PORT=3006 npm start)",
       "Bash(PORT=3007 npm start)",
       "Bash(PORT=3008 node server.js)",
-      "Bash(REACT_APP_API_URL=http://localhost:3008 PORT=3009 npm start)"
+      "Bash(REACT_APP_API_URL=http://localhost:3008 PORT=3009 npm start)",
+      "Bash(find:*)",
+      "Bash(copy .env.example .env)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker:*)",
+      "Bash(cat:*)",
+      "Bash(del \"C:\\Users\\IVA-PC\\WebstormProjects\\trading-info\\test-db-connection.js\")",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

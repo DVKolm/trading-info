@@ -62,12 +62,6 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     }
   };
 
-  const handleUploadClick = () => {
-    if (onUploadClick) {
-      onUploadClick();
-      setIsOpen(false);
-    }
-  };
 
   const handleHomeClick = () => {
     onHomeClick();

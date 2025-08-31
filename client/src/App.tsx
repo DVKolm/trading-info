@@ -79,7 +79,6 @@ const App: React.FC = () => {
 
   const {
     saveScrollPosition,
-    restoreScrollPosition,
     createThrottledScrollHandler,
     scrollToPosition
   } = useScrollManager();

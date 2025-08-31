@@ -13,6 +13,10 @@ echo -e "${BLUE}🚀 H.E.A.R.T v1.0.25 - Updating...${NC}"
 # Change to app directory
 cd ~/trading-info
 
+# Fix permissions for all shell scripts (prevent permission denied errors)
+echo -e "${BLUE}🔧 Fixing shell script permissions...${NC}"
+chmod +x *.sh 2>/dev/null || true
+
 # Function to check if process is running
 check_process() {
     pgrep -f "node.*server.js" > /dev/null 2>&1

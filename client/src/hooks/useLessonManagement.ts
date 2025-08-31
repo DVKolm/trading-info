@@ -11,7 +11,7 @@ export const useLessonManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [lessonHistory, setLessonHistory] = useState<string[]>([]);
   
-  const { batchedLocalStorageSet, getLocalStorageItem } = useLocalStorageBatch();
+  const { batchedLocalStorageSet } = useLocalStorageBatch();
 
   // Extract title from lesson content
   const extractTitleFromContent = useCallback((content: string, fallbackTitle?: string): string => {

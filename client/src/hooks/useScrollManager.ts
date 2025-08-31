@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Lesson } from '../types';
 import { useLocalStorageBatch } from './useLocalStorageBatch';
 

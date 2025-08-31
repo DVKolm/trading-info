@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ArrowLeft, ArrowRight, Clock, CheckCircle, TrendingUp, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
 import { sanitizeLessonTitle } from '../utils/encodingUtils';
@@ -94,7 +94,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 };
 
 const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, onBack, nextLessonPath }) => {
-  const { currentSession, metrics, isActive, handleScroll, markAsComplete } = useProgressTracking(lesson);
+  const { handleScroll } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
 
 
@@ -181,22 +181,6 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
     }
   }, [handleScroll]);
 
-  // Format time for display
-  const formatTime = useCallback((milliseconds: number): string => {
-    const minutes = Math.floor(milliseconds / 60000);
-    const seconds = Math.floor((milliseconds % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }, []);
-
-  // Format engagement level for display
-  const getEngagementColor = useCallback((level: string): string => {
-    switch (level) {
-      case 'high': return '#4ade80';
-      case 'medium': return '#fbbf24';
-      case 'low': return '#f87171';
-      default: return '#6b7280';
-    }
-  }, []);
 
   return (
     <div className="lesson-viewer" ref={lessonViewerRef}>
