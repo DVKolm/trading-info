@@ -15,10 +15,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   useEffect(() => {
     if (welcomeAnimationsEnabled) {
       // Запускаем анимацию появления
-      setTimeout(() => setIsVisible(true), 200);
-      // Показываем контент с задержкой
-      setTimeout(() => setShowContent(true), 800);
+      setTimeout(() => setIsVisible(true), 100);
+      // Показываем контент с меньшей задержкой
+      setTimeout(() => setShowContent(true), 300);
     } else {
+      // Для отключенных анимаций - показывать сразу
       setIsVisible(true);
       setShowContent(true);
     }

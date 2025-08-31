@@ -668,13 +668,20 @@ code {
 /* Screen visibility animation */
 .welcome-screen {
   opacity: 0;
-  transform: scale(0.95);
-  transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: scale(0.98);
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .welcome-screen.visible {
   opacity: 1;
   transform: scale(1);
+}
+
+/* Ensure immediate visibility when animations disabled */
+.welcome-screen.no-animations {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 /* Particles animation */
@@ -816,13 +823,20 @@ code {
   position: relative;
   z-index: 2;
   opacity: 0;
-  transform: translateY(50px);
-  transition: all 1s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: translateY(20px);
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .content-wrapper.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Quick show for no animations */
+.welcome-screen.no-animations .content-wrapper {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 /* Title container with enhanced animations */
@@ -857,19 +871,6 @@ code {
   position: relative;
 }
 
-.title-word.highlight::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  opacity: 0.2;
-  border-radius: 8px;
-  z-index: -1;
-  animation: highlightGlow 2s infinite ease-in-out;
-}
 
 @keyframes wordReveal {
   0% {
