@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Trash2, ArrowLeft, File, Folder, AlertTriangle } from 'lucide-react';
-import { LessonStructure } from './types';
+import { LessonStructure } from '../types';
 
 interface AdminPageProps {
     onBack: () => void;

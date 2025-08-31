@@ -1,4 +1,5 @@
 services:
+
   # Основное приложение
   trading-app:
     build: .
@@ -12,6 +13,13 @@ services:
       - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
       - DEVELOPMENT_MODE=${DEVELOPMENT_MODE:-false}
       - DOMAIN=${DOMAIN}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - DB_HOST=${DB_HOST:-localhost}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-trading_info}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
     env_file:
       - .env
     volumes:
@@ -24,10 +32,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - trading-network
+    network_mode: host
 
-  # Nginx reverse proxy
+  # Nginx reverse proxy (optional, comment out if not needed)
   nginx:
     image: nginx:alpine
     container_name: trading-info-nginx
@@ -40,11 +47,10 @@ services:
       # Логи nginx
       - ./logs/nginx:/var/log/nginx
     depends_on:
-      trading-app:
-        condition: service_healthy
+      - trading-app
     restart: unless-stopped
-    networks:
-      - trading-network
+    profiles:
+      - nginx
 
   # Watchtower для автообновления (опционально)
   watchtower:
@@ -58,12 +64,3 @@ services:
     restart: unless-stopped
     profiles:
       - autoupdate
-
-networks:
-  trading-network:
-    driver: bridge
-
-# Volumes для персистентных данных
-volumes:
-  nginx-logs:
-    driver: local

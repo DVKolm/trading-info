@@ -12,10 +12,10 @@ interface ReadingSession {
 }
 
 interface ProgressMetrics {
-  timeSpent: number; // in milliseconds
-  scrollProgress: number; // 0-100
-  readingSpeed: number; // words per minute
-  completionScore: number; // 0-1
+  timeSpent: number;
+  scrollProgress: number;
+  readingSpeed: number;
+  completionScore: number;
   visits: number;
   lastVisited: number;
   engagementLevel: 'low' | 'medium' | 'high';
@@ -48,7 +48,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
   const engagementTimer = useRef<NodeJS.Timeout | null>(null);
   const sessionTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate word count from lesson content
   const getWordCount = useCallback((content: string): number => {
     return content.split(/\s+/).filter(word => word.length > 0).length;
   }, []);
@@ -83,7 +82,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     };
   }, [currentSession]);
 
-  // Start/restart session when lesson changes
   useEffect(() => {
     if (!lesson) {
       endSession();
@@ -93,7 +91,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     const wordCount = getWordCount(lesson.content);
     const now = Date.now();
     
-    // Load existing progress
     const savedProgress = localStorage.getItem(`lesson_progress_${lesson.path}`);
     let existingMetrics: ProgressMetrics | null = null;
     
@@ -105,7 +102,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
       }
     }
 
-    // Start new session
     const newSession: ReadingSession = {
       startTime: now,
       activeTime: 0,
@@ -119,7 +115,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     setCurrentSession(newSession);
     setMetrics(existingMetrics);
 
-    // Track lesson open event
     trackEvent({
       lessonPath: lesson.path,
       eventType: 'open',
@@ -127,7 +122,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
       data: { wordCount, title: lesson.frontmatter?.title }
     });
 
-    // Update visit count
     const updatedMetrics: ProgressMetrics = {
       timeSpent: existingMetrics?.timeSpent || 0,
       scrollProgress: existingMetrics?.scrollProgress || 0,
@@ -174,21 +168,18 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     };
   }, [currentSession, isActive]);
 
-  // Handle scroll tracking
   const handleScroll = useCallback((scrollPosition: number, maxScroll: number) => {
     if (!currentSession || !isActive) return;
 
     const scrollPercent = maxScroll > 0 ? Math.min((scrollPosition / maxScroll) * 100, 100) : 0;
     const now = Date.now();
     
-    // Detect slow scroll (engagement indicator)
     const scrollDelta = Math.abs(scrollPosition - lastScrollPosition.current);
     const timeSinceLastScroll = now - (currentSession.lastActivityTime || now);
     const scrollSpeed = timeSinceLastScroll > 0 ? scrollDelta / timeSinceLastScroll : 0;
     
-    // Award engagement points for slow, deliberate scrolling
     let engagementPoints = currentSession.engagementPoints;
-    if (scrollSpeed < 0.5 && timeSinceLastScroll > 2000) { // Slow scroll for more than 2 seconds
+    if (scrollSpeed < 0.5 && timeSinceLastScroll > 2000) {
       engagementPoints += 1;
     }
 
@@ -202,7 +193,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     setCurrentSession(updatedSession);
     lastScrollPosition.current = scrollPosition;
 
-    // Track significant scroll events
     if (scrollPercent > currentSession.scrollProgress + 10) {
       trackEvent({
         lessonPath: currentSession.lessonPath,
@@ -212,17 +202,15 @@ export const useProgressTracking = (lesson: Lesson | null) => {
       });
     }
 
-    // Check for completion
     checkCompletion(updatedSession);
   }, [currentSession, isActive]);
 
-  // Award engagement points for staying in one section
   const awardEngagementForTimeSpent = useCallback(() => {
     if (!currentSession || !isActive) return;
 
     setCurrentSession(prev => prev ? {
       ...prev,
-      engagementPoints: prev.engagementPoints + 2 // Award points for sustained attention
+      engagementPoints: prev.engagementPoints + 2
     } : null);
   }, [currentSession, isActive]);
 
@@ -250,7 +238,7 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     if (!session) return;
 
     const totalTime = session.activeTime + (isActive ? Date.now() - session.lastActivityTime : 0);
-    const readingSpeed = totalTime > 0 ? (session.wordCount / (totalTime / 60000)) : 0; // WPM
+    const readingSpeed = totalTime > 0 ? (session.wordCount / (totalTime / 60000)) : 0;
     
     const completionScore = calculateCompletionScore({
       timeSpent: totalTime,
@@ -286,7 +274,6 @@ export const useProgressTracking = (lesson: Lesson | null) => {
     engagementPoints: number;
     wordCount: number;
   }): number => {
-    // Expected reading time based on word count
     const expectedReadingTime = (wordCount / WORDS_PER_MINUTE_AVERAGE) * 60000;
     
     const timeScore = Math.min(timeSpent / expectedReadingTime, 1) * ENGAGEMENT_THRESHOLDS.TIME_MULTIPLIER;
