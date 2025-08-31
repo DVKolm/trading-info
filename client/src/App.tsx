@@ -48,8 +48,8 @@ declare global {
 const App: React.FC = () => {
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [welcomePageReady, setWelcomePageReady] = useState(false);
-  const [welcomeAnimationsEnabled, setWelcomeAnimationsEnabled] = useState(false);
+  const [welcomePageReady, setWelcomePageReady] = useState(true);
+  const [welcomeAnimationsEnabled, setWelcomeAnimationsEnabled] = useState(true);
   const [showAdminPage, setShowAdminPage] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
 
@@ -192,12 +192,9 @@ const App: React.FC = () => {
   // Handle welcome page loading
   useEffect(() => {
     if (!loading) {
-      setTimeout(() => {
-        setWelcomePageReady(true);
-        setTimeout(() => {
-          setWelcomeAnimationsEnabled(true);
-        }, 100);
-      }, 300);
+      // Убираем задержки - показываем сразу
+      setWelcomePageReady(true);
+      setWelcomeAnimationsEnabled(true);
     }
   }, [loading]);
 
