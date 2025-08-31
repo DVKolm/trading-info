@@ -9,9 +9,14 @@ export interface LessonStructure {
 
 export interface Lesson {
   path: string;
-  frontmatter: Record<string, any>;
+  frontmatter?: Record<string, any>;
   content: string;
   html: string;
+  // Additional properties from database
+  title?: string;
+  description?: string;
+  id?: string;
+  slug?: string;
 }
 
 export interface SearchResult {
