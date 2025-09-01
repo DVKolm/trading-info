@@ -141,6 +141,11 @@ const App: React.FC = () => {
     }, 50);
   }, [selectedLesson, saveScrollPosition, setSelectedLesson]);
 
+  // Handle continue learning from welcome screen
+  const handleContinueLearning = useCallback(async (lessonPath: string, scrollPosition: number) => {
+    await handleLessonSelect(lessonPath, scrollPosition);
+  }, [handleLessonSelect]);
+
   // Scroll tracking setup
   useEffect(() => {
     if (!selectedLesson) return;
@@ -186,6 +191,25 @@ const App: React.FC = () => {
       tg.setHeaderColor('#1e1e1e');
       tg.setBackgroundColor('#1e1e1e');
     }
+
+    // Handle viewport changes in mobile environment
+    const handleViewportChange = () => {
+      // Keep sidebar closed on viewport changes to prevent unwanted opening
+      setSidebarOpen(false);
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    // Also listen for Telegram WebApp specific events
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.onEvent('viewportChanged', handleViewportChange);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      if (window.Telegram?.WebApp?.offEvent) {
+        window.Telegram.WebApp.offEvent('viewportChanged', handleViewportChange);
+      }
+    };
   }, []);
 
   // Handle welcome page loading
@@ -244,7 +268,7 @@ const App: React.FC = () => {
       />
       
       {showUserProfile && (
-        <Suspense fallback={<LoadingScreen welcomePageReady={true} welcomeAnimationsEnabled={false} />}>
+        <Suspense fallback={<div className="modal-loading">Загрузка...</div>}>
           <UserProfile 
             onClose={() => setShowUserProfile(false)}
             telegramUser={window.Telegram?.WebApp?.initDataUnsafe?.user}
@@ -277,6 +301,7 @@ const App: React.FC = () => {
           <WelcomeScreen
             welcomeAnimationsEnabled={welcomeAnimationsEnabled}
             onOpenSidebar={() => setSidebarOpen(true)}
+            onContinueLearning={handleContinueLearning}
           />
         )}
       </main>

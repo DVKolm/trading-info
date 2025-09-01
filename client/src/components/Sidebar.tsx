@@ -219,6 +219,7 @@ const Sidebar: React.FC<SidebarProps> = memo(({
 
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
+          <div className="header-spacer"></div>
           <h2>Lessons</h2>
           <button className="close-button" onClick={onToggle}>
             <X size={20} />

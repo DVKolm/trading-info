@@ -219,10 +219,15 @@ code {
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 2rem;
   border-bottom: 1px solid var(--border-color);
   position: relative;
+}
+
+.header-spacer {
+  width: 40px;
+  height: 40px;
 }
 
 .sidebar-header h2 {
@@ -230,6 +235,7 @@ code {
   font-size: 1.8rem;
   font-weight: 600;
   text-align: center;
+  flex: 1;
 }
 
 .close-button {
@@ -2031,6 +2037,47 @@ code {
   color: white;
   transform: scale(1.1);
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Modal Loading */
+.modal-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+/* Welcome Screen - Continue Learning Styles */
+.last-lesson-info {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.6s ease forwards;
+  max-width: 300px;
+  margin-top: 1rem;
+}
+
+.last-lesson-text {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.4;
+  padding: 0.5rem 0;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .floating-nav-btn:active {

@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react';
+import { useLastReadLesson } from '../hooks/useLastReadLesson';
 
 interface WelcomeScreenProps {
   welcomeAnimationsEnabled: boolean;
   onOpenSidebar: () => void;
+  onContinueLearning?: (lessonPath: string, scrollPosition: number) => void;
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ 
   welcomeAnimationsEnabled, 
-  onOpenSidebar 
+  onOpenSidebar,
+  onContinueLearning
 }) => {
   const [isVisible, setIsVisible] = useState(!welcomeAnimationsEnabled);
   const [showContent, setShowContent] = useState(!welcomeAnimationsEnabled);
+  const { lastReadLesson, isReturningUser } = useLastReadLesson();
 
   useEffect(() => {
     if (welcomeAnimationsEnabled) {
@@ -31,6 +35,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       setShowContent(true);
     }
   }, [welcomeAnimationsEnabled]);
+
+  const handleContinueLearning = () => {
+    if (lastReadLesson && onContinueLearning) {
+      onContinueLearning(lastReadLesson.path, lastReadLesson.scrollPosition);
+    }
+  };
 
   return (
     <div className={`welcome-screen ${welcomeAnimationsEnabled ? '' : 'no-animations'} ${isVisible ? 'visible' : ''}`}>
@@ -98,13 +108,23 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         
         <button 
           className="open-sidebar-btn animated-button"
-          onClick={onOpenSidebar}
+          onClick={isReturningUser ? handleContinueLearning : onOpenSidebar}
           style={{animationDelay: '1.8s'}}
         >
-          <span className="button-text">Начать обучение</span>
+          <span className="button-text">
+            {isReturningUser ? 'Продолжить обучение' : 'Начать обучение'}
+          </span>
           <span className="button-icon">→</span>
           <div className="button-ripple"></div>
         </button>
+        
+        {isReturningUser && lastReadLesson && (
+          <div className="last-lesson-info" style={{animationDelay: '2s'}}>
+            <span className="last-lesson-text">
+              Последний урок: {lastReadLesson.title}
+            </span>
+          </div>
+        )}
 
       </div>
     </div>
