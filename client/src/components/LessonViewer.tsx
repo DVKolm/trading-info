@@ -371,25 +371,25 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
 
       {/* Floating Navigation Buttons */}
       <div className="floating-lesson-nav">
-        {prevLessonPath && (
-          <button 
-            className="floating-nav-btn prev-btn"
-            onClick={() => handleNavigateToLesson(prevLessonPath)}
-            title="Предыдущий урок"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
+        {/* DEBUG: Always show prev button for testing */}
+        <button 
+          className="floating-nav-btn prev-btn"
+          onClick={() => prevLessonPath && handleNavigateToLesson(prevLessonPath)}
+          title={`Предыдущий урок ${prevLessonPath ? '(доступен)' : '(недоступен)'}`}
+          style={{ opacity: prevLessonPath ? 1 : 0.3 }}
+        >
+          <ArrowLeft size={20} />
+        </button>
         
-        {nextLessonPath && (
-          <button 
-            className="floating-nav-btn next-btn"
-            onClick={() => handleNavigateToLesson(nextLessonPath)}
-            title="Следующий урок"
-          >
-            <ArrowRight size={20} />
-          </button>
-        )}
+        {/* DEBUG: Always show next button for testing */}
+        <button 
+          className="floating-nav-btn next-btn"
+          onClick={() => nextLessonPath && handleNavigateToLesson(nextLessonPath)}
+          title={`Следующий урок ${nextLessonPath ? '(доступен)' : '(недоступен)'}`}
+          style={{ opacity: nextLessonPath ? 1 : 0.3 }}
+        >
+          <ArrowRight size={20} />
+        </button>
       </div>
 
       {/* Floating Sidebar Toggle */}

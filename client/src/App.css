@@ -233,10 +233,6 @@ code {
 }
 
 .close-button {
-  position: absolute;
-  top: 50%;
-  right: 2rem;
-  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -1786,6 +1782,7 @@ code {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
+  position: relative;
 }
 
 .profile-title {
@@ -1983,6 +1980,7 @@ code {
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 995;
+  height: 48px;
 }
 
 .back-to-lesson-btn:hover {
@@ -1998,14 +1996,17 @@ code {
 
 /* Floating Lesson Navigation */
 .floating-lesson-nav {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
+  position: fixed !important;
+  bottom: 2rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
   gap: 1rem;
-  z-index: 990;
-  pointer-events: auto;
+  z-index: 990 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: opacity 0.3s ease;
 }
 
 .floating-lesson-nav:hover {
@@ -2017,13 +2018,16 @@ code {
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: transparent;
-  color: var(--accent-primary);
+  background: rgba(124, 58, 237, 0.1) !important;
+  color: var(--accent-primary) !important;
   cursor: pointer;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .floating-nav-btn:hover {
