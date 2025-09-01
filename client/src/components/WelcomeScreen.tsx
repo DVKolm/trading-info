@@ -118,13 +118,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <div className="button-ripple"></div>
         </button>
         
-        {isReturningUser && lastReadLesson && (
-          <div className="last-lesson-info" style={{animationDelay: '2s'}}>
-            <span className="last-lesson-text">
-              Последний урок: {lastReadLesson.title}
-            </span>
-          </div>
-        )}
 
       </div>
     </div>
