@@ -128,8 +128,6 @@ export const useLessonManagement = () => {
     };
 
     const allLessons = flattenStructure(lessonStructure);
-    console.log('[Navigation Debug] Getting ordered lessons from structure:', allLessons.length, 'items');
-    console.log('[Navigation Debug] Flattened lessons:', allLessons.length, allLessons.map(l => l.path));
     
     // Filter main lesson files only (not checklists, settings, etc.)
     const filteredLessons = allLessons.filter(lesson => {
@@ -154,7 +152,6 @@ export const useLessonManagement = () => {
       return isMainLesson;
     });
     
-    console.log('[Navigation Debug] Filtered main lessons:', filteredLessons.length, filteredLessons.map(l => l.path));
     
     // Sort by lesson number (across ALL tiers)
     const sortedLessons = filteredLessons.sort((a, b) => {
@@ -163,7 +160,6 @@ export const useLessonManagement = () => {
       return aNum - bNum;
     });
     
-    console.log('[Navigation Debug] Sorted lessons:', sortedLessons.map(l => ({ path: l.path, lessonNum: l.path.match(/Урок (\d+)/)?.[1] })));
     return sortedLessons;
   }, [lessonStructure]);
 
@@ -173,16 +169,11 @@ export const useLessonManagement = () => {
       const allLessons = getOrderedLessons();
       const currentIndex = allLessons.findIndex(lesson => lesson.path === currentPath);
       
-      console.log('[Navigation Debug] Getting next lesson for:', currentPath);
-      console.log('[Navigation Debug] Current lesson index:', currentIndex, 'of', allLessons.length);
-      
       if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
         const nextLesson = allLessons[currentIndex + 1];
-        console.log('[Navigation Debug] Next lesson found:', nextLesson.path);
         return nextLesson.path;
       }
       
-      console.log('[Navigation Debug] No next lesson found');
       return null;
     };
   }, [getOrderedLessons]);
@@ -193,41 +184,26 @@ export const useLessonManagement = () => {
       const allLessons = getOrderedLessons();
       const currentIndex = allLessons.findIndex(lesson => lesson.path === currentPath);
       
-      console.log('[Navigation Debug] Getting prev lesson for:', currentPath);
-      console.log('[Navigation Debug] Current lesson index:', currentIndex, 'of', allLessons.length);
-      
       if (currentIndex > 0) {
         const prevLesson = allLessons[currentIndex - 1];
-        console.log('[Navigation Debug] Previous lesson found:', prevLesson.path);
         return prevLesson.path;
       }
       
-      console.log('[Navigation Debug] No previous lesson found');
       return null;
     };
   }, [getOrderedLessons]);
 
   // Memoize lesson paths
   const nextLessonPath = useMemo(() => {
-    if (!selectedLesson) {
-      console.log('[Navigation Debug] No selected lesson for next path calculation');
-      return null;
-    }
+    if (!selectedLesson) return null;
     
-    const next = getNextLesson(selectedLesson.path);
-    console.log('[Navigation Debug] Final next lesson path:', next);
-    return next;
+    return getNextLesson(selectedLesson.path);
   }, [selectedLesson, getNextLesson]);
 
   const prevLessonPath = useMemo(() => {
-    if (!selectedLesson) {
-      console.log('[Navigation Debug] No selected lesson for prev path calculation');
-      return null;
-    }
+    if (!selectedLesson) return null;
     
-    const prev = getPrevLesson(selectedLesson.path);
-    console.log('[Navigation Debug] Final prev lesson path:', prev);
-    return prev;
+    return getPrevLesson(selectedLesson.path);
   }, [selectedLesson, getPrevLesson]);
 
   // Preload next lesson for better UX

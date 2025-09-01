@@ -1996,17 +1996,16 @@ code {
 
 /* Floating Lesson Navigation */
 .floating-lesson-nav {
-  position: fixed !important;
-  bottom: 2rem !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  display: flex !important;
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateZ(0);
+  display: flex;
   gap: 1rem;
-  z-index: 990 !important;
-  pointer-events: auto !important;
-  opacity: 1 !important;
-  visibility: visible !important;
+  pointer-events: auto;
+  opacity: 0.9;
   transition: opacity 0.3s ease;
+  isolation: isolate;
 }
 
 .floating-lesson-nav:hover {
@@ -2018,16 +2017,13 @@ code {
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: rgba(124, 58, 237, 0.1) !important;
-  color: var(--accent-primary) !important;
+  background: transparent;
+  color: var(--accent-primary);
   cursor: pointer;
-  display: flex !important;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
 }
 
 .floating-nav-btn:hover {

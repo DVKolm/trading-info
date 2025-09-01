@@ -401,6 +401,7 @@ class EnhancedLessonService {
                 name: lesson.title,
                 type: 'file',
                 path: lesson.path,
+                filename: lesson.path.split('/').pop(),
                 wordCount: lesson.word_count,
                 updatedAt: lesson.updated_at
             });
