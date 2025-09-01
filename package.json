@@ -27,7 +27,11 @@
     "docker:db": "docker-compose up postgres redis -d",
     "docker:tools": "docker-compose --profile tools up -d",
     "docker:down": "docker-compose down",
-    "setup:dev": "npm run docker:db && sleep 10 && npm run db:migrate && npm run dev"
+    "setup:dev": "npm run docker:db && sleep 10 && npm run db:migrate && npm run dev",
+    "clear-cache": "node clear-redis-cache.js",
+    "clear-cache:lessons": "node clear-redis-cache.js lesson:*",
+    "clear-cache:users": "node clear-redis-cache.js user:progress:*",
+    "redis-status": "node -e \"const redis = require('redis'); const client = redis.createClient({url: process.env.REDIS_URL || 'redis://localhost:6379'}); client.connect().then(() => client.info()).then(info => console.log('Redis Status:', info.split('\\n').slice(0,5).join('\\n'))).then(() => client.quit()).catch(console.error)\""
   },
   "dependencies": {
     "adm-zip": "^0.5.10",
