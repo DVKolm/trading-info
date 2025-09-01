@@ -20,9 +20,9 @@
   --warning-color: #faa61a;
   --error-color: #f04747;
   --code-bg: #2f3136;
-  --welcome-gradient-start: #2a2a3a;
+  --welcome-gradient-start: #2d2a45;
   --welcome-gradient-mid: #1f1f2e;
-  --welcome-gradient-end: #1a1a28;
+  --welcome-gradient-end: #1a1a2e;
   --welcome-wave-1: rgba(54, 54, 54, 0.4);
   --welcome-wave-2: rgba(114, 118, 125, 0.2);
   --welcome-wave-3: rgba(45, 45, 45, 0.3);
@@ -46,9 +46,9 @@
   --warning-color: #f59e0b;
   --error-color: #ef4444;
   --code-bg: #f8f9fa;
-  --welcome-gradient-start: #e5e5f0;
-  --welcome-gradient-mid: #d0d0e0;
-  --welcome-gradient-end: #c0c0d5;
+  --welcome-gradient-start: #f8f9fa;
+  --welcome-gradient-mid: #ffffff;
+  --welcome-gradient-end: #f1f3f4;
   --welcome-wave-1: rgba(242, 242, 242, 0.4);
   --welcome-wave-2: rgba(184, 184, 184, 0.2);
   --welcome-wave-3: rgba(232, 232, 232, 0.3);
@@ -509,10 +509,11 @@ code {
     var(--welcome-gradient-end), 
     var(--bg-secondary), 
     var(--welcome-gradient-start), 
-    var(--bg-tertiary)
+    var(--bg-tertiary),
+    var(--welcome-gradient-mid)
   );
-  background-size: 400% 400%;
-  animation: gradient-background 15s ease infinite;
+  background-size: 300% 300%;
+  animation: gradientFlow 20s ease-in-out infinite;
 }
 
 /* Отключение анимаций до готовности */
@@ -1069,7 +1070,7 @@ code {
 
 
 /* Disable all new animations when animations are turned off */
-.welcome-screen.no-animations .particle,
+.welcome-screen.no-animations .mini-dot,
 .welcome-screen.no-animations .wave,
 .welcome-screen.no-animations .title-word,
 .welcome-screen.no-animations .title-underline,
@@ -2080,8 +2081,125 @@ code {
   }
 }
 
+/* Gentle gradient animation for welcome screen */
+@keyframes gradientFlow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 .floating-nav-btn:active {
   transform: scale(0.95);
+}
+
+/* Mini dots animation - tiny floating particles */
+.dots-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mini-dot {
+  position: absolute;
+  bottom: -20px;
+  border-radius: 50%;
+  animation: dotFloat 8s linear infinite;
+}
+
+.dot-1 { 
+  width: 2px; 
+  height: 2px; 
+  background: rgba(124, 58, 237, 0.6);
+}
+
+.dot-2 { 
+  width: 1px; 
+  height: 1px; 
+  background: rgba(219, 39, 119, 0.7);
+}
+
+.dot-3 { 
+  width: 3px; 
+  height: 3px; 
+  background: rgba(124, 58, 237, 0.5);
+}
+
+.dot-4 { 
+  width: 1px; 
+  height: 1px; 
+  background: rgba(219, 39, 119, 0.8);
+}
+
+.dot-5 { 
+  width: 2px; 
+  height: 2px; 
+  background: rgba(124, 58, 237, 0.7);
+}
+
+.dot-6 { 
+  width: 3px; 
+  height: 3px; 
+  background: rgba(219, 39, 119, 0.5);
+}
+
+.dot-7 { 
+  width: 1px; 
+  height: 1px; 
+  background: rgba(124, 58, 237, 0.8);
+}
+
+.dot-8 { 
+  width: 2px; 
+  height: 2px; 
+  background: rgba(219, 39, 119, 0.6);
+}
+
+.dot-9 { 
+  width: 3px; 
+  height: 3px; 
+  background: rgba(124, 58, 237, 0.4);
+}
+
+.dot-10 { 
+  width: 1px; 
+  height: 1px; 
+  background: rgba(219, 39, 119, 0.9);
+}
+
+.dot-11 { 
+  width: 2px; 
+  height: 2px; 
+  background: rgba(124, 58, 237, 0.6);
+}
+
+.dot-12 { 
+  width: 2px; 
+  height: 2px; 
+  background: rgba(219, 39, 119, 0.7);
+}
+
+@keyframes dotFloat {
+  0% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(10px);
+    opacity: 0;
+  }
 }
 
 /* Different positioning for prev/next buttons */

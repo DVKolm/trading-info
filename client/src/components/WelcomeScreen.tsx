@@ -44,16 +44,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   return (
     <div className={`welcome-screen ${welcomeAnimationsEnabled ? '' : 'no-animations'} ${isVisible ? 'visible' : ''}`}>
-      {/* Плавающие частицы - только при включенных анимациях */}
+      {/* Мини-точки - только при включенных анимациях */}
       {welcomeAnimationsEnabled && isVisible && (
-        <div className="particles-container">
+        <div className="dots-container">
           {Array.from({ length: 12 }, (_, i) => (
             <div 
               key={i} 
-              className={`particle particle-${i + 1}`} 
+              className={`mini-dot dot-${i + 1}`} 
               style={{
-                animationDelay: `${Math.random() * 8}s`,
-                left: `${10 + Math.random() * 80}%`,
+                animationDelay: `${i * 0.8 + Math.random() * 3}s`,
+                left: `${5 + Math.random() * 90}%`,
                 animationDuration: `${6 + Math.random() * 4}s`
               }}
             />
