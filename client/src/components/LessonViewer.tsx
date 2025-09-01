@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { Lesson } from '../types';
 import { useProgressTracking } from '../hooks/useProgressTracking';
+import MarkdownImageProcessor from './MarkdownImageProcessor';
 
 interface LessonViewerProps {
   lesson: Lesson;
@@ -229,131 +228,133 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
   }, [handleScroll]);
 
 
+  // Memoized markdown components
+  const markdownComponents = useMemo(() => ({
+    code({ className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return match ? (
+        <SyntaxHighlighter
+          style={oneDark as any}
+          language={match[1]}
+          PreTag="div"
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
+    a({ href, children, ...props }: any) {
+      if (href?.startsWith('#internal-link-')) {
+        return (
+          <a
+            href={href}
+            className="internal-link"
+            onClick={(e) => {
+              e.preventDefault();
+              handleInternalLink(href);
+            }}
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      }
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
+    h1({ children, ...props }: any) {
+      return <h1 className="lesson-h1" {...props}>{children}</h1>;
+    },
+    h2({ children, ...props }: any) {
+      return <h2 className="lesson-h2" {...props}>{children}</h2>;
+    },
+    h3({ children, ...props }: any) {
+      return <h3 className="lesson-h3" {...props}>{children}</h3>;
+    },
+    h4({ children, ...props }: any) {
+      return <h4 className="lesson-h4" {...props}>{children}</h4>;
+    },
+    h5({ children, ...props }: any) {
+      return <h5 className="lesson-h5" {...props}>{children}</h5>;
+    },
+    h6({ children, ...props }: any) {
+      return <h6 className="lesson-h6" {...props}>{children}</h6>;
+    },
+    blockquote({ children, ...props }: any) {
+      return <blockquote className="lesson-blockquote" {...props}>{children}</blockquote>;
+    },
+    ul({ children, ...props }: any) {
+      return <ul className="lesson-ul" {...props}>{children}</ul>;
+    },
+    ol({ children, ...props }: any) {
+      return <ol className="lesson-ol" {...props}>{children}</ol>;
+    },
+    li({ children, ...props }: any) {
+      return <li className="lesson-li" {...props}>{children}</li>;
+    },
+    p({ children, ...props }: any) {
+      return <p className="lesson-p" {...props}>{children}</p>;
+    },
+    strong({ children, ...props }: any) {
+      return <strong className="lesson-strong" {...props}>{children}</strong>;
+    },
+    em({ children, ...props }: any) {
+      return <em className="lesson-em" {...props}>{children}</em>;
+    },
+    table({ children, ...props }: any) {
+      return <table className="lesson-table" {...props}>{children}</table>;
+    },
+    thead({ children, ...props }: any) {
+      return <thead className="lesson-thead" {...props}>{children}</thead>;
+    },
+    tbody({ children, ...props }: any) {
+      return <tbody className="lesson-tbody" {...props}>{children}</tbody>;
+    },
+    tr({ children, ...props }: any) {
+      return <tr className="lesson-tr" {...props}>{children}</tr>;
+    },
+    th({ children, ...props }: any) {
+      return <th className="lesson-th" {...props}>{children}</th>;
+    },
+    td({ children, ...props }: any) {
+      return <td className="lesson-td" {...props}>{children}</td>;
+    },
+    img({ src, alt, ...props }: any) {
+      return (
+        <LazyImage
+          src={src || ''}
+          alt={alt || ''}
+          className="lesson-image"
+          style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', margin: '1rem 0' }}
+        />
+      );
+    },
+    br({ ...props }: any) {
+      return <br className="lesson-br" {...props} />;
+    },
+  }), [handleInternalLink]);
+
   return (
     <div className="lesson-viewer" ref={lessonViewerRef}>
-
-
       <div className="lesson-content">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            code({ className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className || '');
-              return match ? (
-                <SyntaxHighlighter
-                  style={oneDark as any}
-                  language={match[1]}
-                  PreTag="div"
-                >
-                  {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-              ) : (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              );
-            },
-            a({ href, children, ...props }) {
-              if (href?.startsWith('#internal-link-')) {
-                return (
-                  <a
-                    href={href}
-                    className="internal-link"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleInternalLink(href);
-                    }}
-                    {...props}
-                  >
-                    {children}
-                  </a>
-                );
-              }
-              return (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  {...props}
-                >
-                  {children}
-                </a>
-              );
-            },
-            h1({ children, ...props }) {
-              return <h1 className="lesson-h1" {...props}>{children}</h1>;
-            },
-            h2({ children, ...props }) {
-              return <h2 className="lesson-h2" {...props}>{children}</h2>;
-            },
-            h3({ children, ...props }) {
-              return <h3 className="lesson-h3" {...props}>{children}</h3>;
-            },
-            h4({ children, ...props }) {
-              return <h4 className="lesson-h4" {...props}>{children}</h4>;
-            },
-            h5({ children, ...props }) {
-              return <h5 className="lesson-h5" {...props}>{children}</h5>;
-            },
-            h6({ children, ...props }) {
-              return <h6 className="lesson-h6" {...props}>{children}</h6>;
-            },
-            blockquote({ children, ...props }) {
-              return <blockquote className="lesson-blockquote" {...props}>{children}</blockquote>;
-            },
-            ul({ children, ...props }) {
-              return <ul className="lesson-ul" {...props}>{children}</ul>;
-            },
-            ol({ children, ...props }) {
-              return <ol className="lesson-ol" {...props}>{children}</ol>;
-            },
-            li({ children, ...props }) {
-              return <li className="lesson-li" {...props}>{children}</li>;
-            },
-            p({ children, ...props }) {
-              return <p className="lesson-p" {...props}>{children}</p>;
-            },
-            strong({ children, ...props }) {
-              return <strong className="lesson-strong" {...props}>{children}</strong>;
-            },
-            em({ children, ...props }) {
-              return <em className="lesson-em" {...props}>{children}</em>;
-            },
-            table({ children, ...props }) {
-              return <table className="lesson-table" {...props}>{children}</table>;
-            },
-            thead({ children, ...props }) {
-              return <thead className="lesson-thead" {...props}>{children}</thead>;
-            },
-            tbody({ children, ...props }) {
-              return <tbody className="lesson-tbody" {...props}>{children}</tbody>;
-            },
-            tr({ children, ...props }) {
-              return <tr className="lesson-tr" {...props}>{children}</tr>;
-            },
-            th({ children, ...props }) {
-              return <th className="lesson-th" {...props}>{children}</th>;
-            },
-            td({ children, ...props }) {
-              return <td className="lesson-td" {...props}>{children}</td>;
-            },
-            img({ src, alt, ...props }) {
-              return (
-                <LazyImage
-                  src={src || ''}
-                  alt={alt || ''}
-                  className="lesson-image"
-                  style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', margin: '1rem 0' }}
-                />
-              );
-            },
-            br({ ...props }) {
-              return <br className="lesson-br" {...props} />;
-            },
-          }}
-        >
-          {processedContent}
-        </ReactMarkdown>
+        <MarkdownImageProcessor
+          content={processedContent}
+          components={markdownComponents}
+          minGroupSize={2}
+          collageMaxHeight={400}
+          showCaptions={false}
+        />
       </div>
 
 
