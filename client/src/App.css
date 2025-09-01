@@ -1482,7 +1482,7 @@ code {
   bottom: 2rem;
   right: 2rem;
   z-index: 1000;
-  opacity: 0.6;
+  opacity: 0;
   transition: opacity 0.3s ease;
 }
 
@@ -1944,20 +1944,18 @@ code {
   height: 48px;
   border-radius: 50%;
   border: none;
-  background-color: var(--accent-primary);
-  color: white;
+  background-color: transparent;
+  color: var(--accent-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-  opacity: 0.6;
 }
 
 .floating-sidebar-toggle:hover {
-  background-color: var(--accent-secondary);
-  opacity: 1;
+  background-color: var(--accent-primary);
+  color: white;
   transform: scale(1.1);
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }
@@ -1975,22 +1973,20 @@ code {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: rgba(124, 58, 237, 0.9);
-  color: white;
+  background: transparent;
+  color: var(--accent-primary);
   border: none;
   border-radius: 25px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-  opacity: 0.6;
   z-index: 995;
 }
 
 .back-to-lesson-btn:hover {
-  opacity: 1;
   background: rgba(124, 58, 237, 1);
+  color: white;
   transform: translateX(-2px);
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }
@@ -2009,8 +2005,6 @@ code {
   gap: 1rem;
   z-index: 990;
   pointer-events: auto;
-  opacity: 0.6;
-  transition: opacity 0.3s ease;
 }
 
 .floating-lesson-nav:hover {
@@ -2022,18 +2016,18 @@ code {
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--accent-primary);
-  color: white;
+  background: transparent;
+  color: var(--accent-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 .floating-nav-btn:hover {
-  background: var(--accent-secondary);
+  background: var(--accent-primary);
+  color: white;
   transform: scale(1.1);
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
 }

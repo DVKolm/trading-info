@@ -13,6 +13,8 @@ interface LessonViewerProps {
   nextLessonPath?: string | null;
   prevLessonPath?: string | null;
   onSidebarToggle?: () => void;
+  isSubscribed?: boolean;
+  onSubscriptionRequired?: () => void;
 }
 
 // Image cache to prevent reloading
@@ -91,9 +93,23 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
   );
 };
 
-const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, nextLessonPath, prevLessonPath, onSidebarToggle }) => {
+const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, nextLessonPath, prevLessonPath, onSidebarToggle, isSubscribed, onSubscriptionRequired }) => {
   const { handleScroll } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
+
+  // Check if a lesson is premium/requires subscription
+  const isPremiumLesson = useCallback((lessonPath: string) => {
+    return lessonPath.includes('Средний уровень (Подписка)') || lessonPath.includes('🎓');
+  }, []);
+
+  // Enhanced navigation handler with subscription check
+  const handleNavigateToLesson = useCallback((lessonPath: string) => {
+    if (isPremiumLesson(lessonPath) && !isSubscribed) {
+      onSubscriptionRequired?.();
+      return;
+    }
+    onNavigateToLesson?.(lessonPath);
+  }, [isPremiumLesson, isSubscribed, onSubscriptionRequired, onNavigateToLesson]);
 
 
   // Memoized process Obsidian-style internal links [[Link Name]] and images
@@ -144,11 +160,12 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
 
   // Determine if this is a sub-file (checklist, settings, etc.) and find parent lesson
   const isSubFile = useMemo(() => {
-    return lesson.filename?.includes('Чек-лист') || 
-           lesson.filename?.includes('Настройки') || 
-           lesson.filename?.includes('Сигналы') ||
-           (lesson.path.includes('Урок') && !lesson.filename?.match(/^Урок \d+\./));
-  }, [lesson.filename, lesson.path]);
+    const filename = lesson.path.split('/').pop() || '';
+    return filename.includes('Чек-лист') || 
+           filename.includes('Настройки') || 
+           filename.includes('Сигналы') ||
+           (lesson.path.includes('Урок') && !filename.match(/^Урок \d+\./));
+  }, [lesson.path]);
 
   const parentLessonPath = useMemo(() => {
     if (!isSubFile) return null;
@@ -181,8 +198,8 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         const response = await fetch(`${apiUrl}/api/lessons/resolve?name=${encodeURIComponent(linkText)}`);
         const data = await response.json();
         
-        if (data.found && onNavigateToLesson) {
-          onNavigateToLesson(data.path);
+        if (data.found) {
+          handleNavigateToLesson(data.path);
         } else {
           // Could show a toast or notification here
           console.warn('Internal link not found:', linkText);
@@ -191,7 +208,7 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
         console.error('Failed to resolve internal link:', error);
       }
     }
-  }, [onNavigateToLesson]);
+  }, [handleNavigateToLesson]);
 
   // Set up scroll tracking
   useEffect(() => {
@@ -341,10 +358,10 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
 
 
       {/* Back to Main Lesson Button (for sub-files like checklists) */}
-      {isSubFile && parentLessonPath && onNavigateToLesson && (
+      {isSubFile && parentLessonPath && (
         <button 
           className="back-to-lesson-btn"
-          onClick={() => onNavigateToLesson(parentLessonPath)}
+          onClick={() => handleNavigateToLesson(parentLessonPath)}
           title="Назад к уроку"
         >
           <ArrowLeft size={20} />
@@ -354,20 +371,20 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
 
       {/* Floating Navigation Buttons */}
       <div className="floating-lesson-nav">
-        {prevLessonPath && onNavigateToLesson && (
+        {prevLessonPath && (
           <button 
             className="floating-nav-btn prev-btn"
-            onClick={() => onNavigateToLesson(prevLessonPath)}
+            onClick={() => handleNavigateToLesson(prevLessonPath)}
             title="Предыдущий урок"
           >
             <ArrowLeft size={20} />
           </button>
         )}
         
-        {nextLessonPath && onNavigateToLesson && (
+        {nextLessonPath && (
           <button 
             className="floating-nav-btn next-btn"
-            onClick={() => onNavigateToLesson(nextLessonPath)}
+            onClick={() => handleNavigateToLesson(nextLessonPath)}
             title="Следующий урок"
           >
             <ArrowRight size={20} />

@@ -270,6 +270,8 @@ const App: React.FC = () => {
             nextLessonPath={nextLessonPath}
             prevLessonPath={prevLessonPath}
             onSidebarToggle={() => setSidebarOpen(true)}
+            isSubscribed={isSubscribed}
+            onSubscriptionRequired={onSubscriptionRequired}
           />
         ) : (
           <WelcomeScreen
