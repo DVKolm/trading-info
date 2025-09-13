@@ -37,7 +37,9 @@
       "Bash(chmod:*)",
       "Bash(echo:*)",
       "Bash(tasklist)",
-      "Bash(del \"C:\\Users\\IVA-PC\\WebstormProjects\\trading-info\\test-db-upload.js\")"
+      "Bash(del \"C:\\Users\\IVA-PC\\WebstormProjects\\trading-info\\test-db-upload.js\")",
+      "Bash(redis-cli:*)",
+      "Bash(npm run clear-cache:*)"
     ],
     "deny": [],
     "ask": []
