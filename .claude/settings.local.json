@@ -39,7 +39,15 @@
       "Bash(tasklist)",
       "Bash(del \"C:\\Users\\IVA-PC\\WebstormProjects\\trading-info\\test-db-upload.js\")",
       "Bash(redis-cli:*)",
-      "Bash(npm run clear-cache:*)"
+      "Bash(npm run clear-cache:*)",
+      "Bash(java:*)",
+      "Bash(psql:*)",
+      "Bash(copy:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(cmd.exe /c deploy.bat)",
+      "Bash(npm run install-client:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []
