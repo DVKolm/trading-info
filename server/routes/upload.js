@@ -254,16 +254,29 @@ router.post('/lesson', upload.single('lesson'), validateTelegramAuth, requireAdm
         // Clear Redis cache after successful upload to reflect new lesson
         try {
             if (db.isRedisConnected && db.redisClient) {
-                // Clear lesson list cache since structure changed
-                const lessonListPattern = 'lessons:*';
-                const lessonListKeys = await db.redisClient.keys(lessonListPattern);
+                // Clear lesson structure cache
+                const structureKey = 'lesson:structure';
+                if (await db.redisClient.exists(structureKey)) {
+                    await db.redisClient.del(structureKey);
+                    logger.info('🗑️ Cleared lesson structure cache after upload');
+                }
+
+                // Clear all lesson list caches
+                const lessonListKeys = await db.redisClient.keys('lessons:*');
                 if (lessonListKeys.length > 0) {
                     await db.redisClient.del(lessonListKeys);
-                    logger.info('Cleared lesson list cache after upload');
+                    logger.info(`🗑️ Cleared ${lessonListKeys.length} lesson list cache entries after upload`);
                 }
+
+                // Log all current keys for debugging
+                const allKeys = await db.redisClient.keys('*');
+                logger.info('📊 Redis cache state after upload', {
+                    totalKeys: allKeys.length,
+                    keys: allKeys.slice(0, 10) // Show first 10 keys
+                });
             }
         } catch (redisError) {
-            logger.warn('Could not clear Redis cache after upload', {
+            logger.warn('⚠️ Could not clear Redis cache after upload', {
                 error: redisError.message
             });
         }
@@ -283,6 +296,40 @@ router.post('/lesson', upload.single('lesson'), validateTelegramAuth, requireAdm
             userId: user?.id
         });
         res.status(500).json({ error: 'Failed to upload lesson.' });
+    }
+});
+
+// Clear all Redis cache - admin only
+router.post('/clear-cache', express.json(), validateTelegramAuth, requireAdmin, async (req, res) => {
+    const user = req.telegramUser;
+
+    logger.info('🧹 Admin requesting full cache clear', {
+        userId: user.id,
+        username: user.username
+    });
+
+    try {
+        if (db.isRedisConnected && db.redisClient) {
+            const keys = await db.redisClient.keys('*');
+            if (keys.length > 0) {
+                await db.redisClient.del(keys);
+                logger.info(`✅ Cleared all ${keys.length} Redis cache entries`, {
+                    userId: user.id,
+                    username: user.username
+                });
+                res.json({ message: `Successfully cleared ${keys.length} cache entries` });
+            } else {
+                res.json({ message: 'Cache was already empty' });
+            }
+        } else {
+            res.status(503).json({ error: 'Redis not connected' });
+        }
+    } catch (error) {
+        logger.error('❌ Failed to clear cache', {
+            error: error.message,
+            userId: user.id
+        });
+        res.status(500).json({ error: 'Failed to clear cache' });
     }
 });
 
@@ -318,22 +365,48 @@ router.delete('/lesson', express.json(), validateTelegramAuth, requireAdmin, asy
 
         // Clean up database records for this lesson
         try {
-            // Delete progress records for this lesson path
             if (db.isConnected) {
-                const deleteResult = await db.query(
+                // Delete the lesson itself from database
+                const lessonDeleteResult = await db.query(
+                    'DELETE FROM lessons WHERE path = $1',
+                    [lessonPath]
+                );
+
+                if (lessonDeleteResult.rowCount > 0) {
+                    logger.info(`✅ Deleted lesson from database`, {
+                        lessonPath,
+                        userId: user.id
+                    });
+                }
+
+                // Delete progress records for this lesson path
+                const progressDeleteResult = await db.query(
                     'DELETE FROM user_progress WHERE lesson_path = $1',
                     [lessonPath]
                 );
 
-                if (deleteResult.rowCount > 0) {
-                    logger.info(`Deleted ${deleteResult.rowCount} progress records for lesson`, {
+                if (progressDeleteResult.rowCount > 0) {
+                    logger.info(`📊 Deleted ${progressDeleteResult.rowCount} progress records for lesson`, {
+                        lessonPath,
+                        userId: user.id
+                    });
+                }
+
+                // Delete analytics events for this lesson
+                const analyticsDeleteResult = await db.query(
+                    'DELETE FROM analytics_events WHERE lesson_path = $1',
+                    [lessonPath]
+                );
+
+                if (analyticsDeleteResult.rowCount > 0) {
+                    logger.info(`📈 Deleted ${analyticsDeleteResult.rowCount} analytics events for lesson`, {
                         lessonPath,
                         userId: user.id
                     });
                 }
             }
         } catch (dbError) {
-            logger.warn('Could not delete progress records from database', {
+            logger.warn('⚠️ Could not delete records from database', {
                 error: dbError.message,
                 lessonPath
             });
@@ -342,44 +415,92 @@ router.delete('/lesson', express.json(), validateTelegramAuth, requireAdmin, asy
         // Clear Redis cache for this lesson
         try {
             if (db.isRedisConnected && db.redisClient) {
-                // Find and delete all cache keys related to this lesson
-                const pattern = `*:${lessonPath.replace(/[\/\\]/g, ':')}*`;
-                const keys = await db.redisClient.keys(pattern);
+                // Get all keys from Redis
+                const allKeys = await db.redisClient.keys('*');
 
-                if (keys.length > 0) {
-                    await db.redisClient.del(keys);
-                    logger.info(`Cleared ${keys.length} cache entries for lesson`, {
+                // Filter keys that contain the lesson path
+                const keysToDelete = [];
+                for (const key of allKeys) {
+                    // Check if key contains any part of the lesson path
+                    // Handle both encoded and decoded versions
+                    if (key.includes(lessonPath) ||
+                        key.includes(encodeURIComponent(lessonPath)) ||
+                        key.includes(lessonPath.replace(/\//g, ':')) ||
+                        key.includes(lessonPath.replace(/\\/g, ':'))) {
+                        keysToDelete.push(key);
+                    }
+                }
+
+                // Delete specific lesson cache key
+                const specificKey = `lesson:content:${lessonPath}`;
+                if (allKeys.includes(specificKey)) {
+                    keysToDelete.push(specificKey);
+                }
+
+                // Delete all found keys
+                if (keysToDelete.length > 0) {
+                    await db.redisClient.del(keysToDelete);
+                    logger.info(`🗑️ Cleared ${keysToDelete.length} cache entries for lesson`, {
                         lessonPath,
+                        keys: keysToDelete,
                         userId: user.id
                     });
                 }
 
-                // Also clear lesson list cache since structure changed
-                const lessonListPattern = 'lessons:*';
-                const lessonListKeys = await db.redisClient.keys(lessonListPattern);
+                // Clear lesson structure cache
+                const structureKey = 'lesson:structure';
+                if (await db.redisClient.exists(structureKey)) {
+                    await db.redisClient.del(structureKey);
+                    logger.info('🗑️ Cleared lesson structure cache');
+                }
+
+                // Clear all lesson list caches
+                const lessonListKeys = await db.redisClient.keys('lessons:*');
                 if (lessonListKeys.length > 0) {
                     await db.redisClient.del(lessonListKeys);
-                    logger.info('Cleared lesson list cache');
+                    logger.info(`🗑️ Cleared ${lessonListKeys.length} lesson list cache entries`);
                 }
             }
         } catch (redisError) {
-            logger.warn('Could not clear Redis cache', {
+            logger.warn('⚠️ Could not clear Redis cache', {
                 error: redisError.message,
                 lessonPath
             });
         }
 
         // Delete the actual file/directory
+        logger.info('🗑️ Attempting to delete', {
+            fullPath,
+            isDirectory: stats.isDirectory(),
+            lessonPath
+        });
+
         if (stats.isDirectory()) {
+            // List contents before deletion for debugging
+            const contents = await fs.readdir(fullPath);
+            logger.info('📁 Directory contents before deletion', {
+                path: fullPath,
+                files: contents
+            });
+
+            // Remove entire directory and all its contents
             await fs.remove(fullPath);
-            logger.info('Directory deleted successfully', {
+
+            // Verify deletion
+            const stillExists = await fs.pathExists(fullPath);
+            if (stillExists) {
+                logger.error('❌ Directory still exists after deletion attempt', { fullPath });
+                throw new Error('Failed to delete directory completely');
+            }
+
+            logger.info('✅ Directory deleted successfully', {
                 lessonPath,
                 userId: user.id,
                 username: user.username
             });
         } else {
             await fs.unlink(fullPath);
-            logger.info('File deleted successfully', {
+            logger.info('✅ File deleted successfully', {
                 lessonPath,
                 userId: user.id,
                 username: user.username

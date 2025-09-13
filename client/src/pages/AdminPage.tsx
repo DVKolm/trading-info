@@ -95,10 +95,17 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                 // Clear the file input
                 const fileInput = document.getElementById('file-input') as HTMLInputElement;
                 if (fileInput) fileInput.value = '';
-                // Refresh lesson structure if on manage tab
-                if (activeTab === 'manage') {
-                    fetchLessonStructure();
-                }
+
+                // Always refresh lesson structure after successful upload
+                await fetchLessonStructure();
+
+                // Switch to manage tab to show the uploaded lesson
+                setActiveTab('manage');
+
+                // Reload the page after a short delay to ensure all caches are cleared
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } else {
                 setMessage(`Error: ${data.error || 'Upload failed.'}`);
             }
@@ -142,7 +149,13 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
 
             if (response.ok) {
                 setMessage(data.message || 'Delete successful!');
-                fetchLessonStructure(); // Refresh the list
+                // Refresh the lesson structure immediately
+                await fetchLessonStructure();
+
+                // Force reload to ensure all caches are cleared
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 setMessage(`Error: ${data.error || 'Delete failed.'}`);
             }
@@ -302,6 +315,39 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                                     <h2>Manage Files</h2>
                                     <p>View and delete lesson files and folders</p>
                                 </div>
+                            </div>
+
+                            <div className="manage-actions">
+                                <button
+                                    onClick={async () => {
+                                        const initData = window.Telegram?.WebApp?.initData;
+                                        if (!initData) {
+                                            setMessage('Error: Authentication required');
+                                            return;
+                                        }
+
+                                        try {
+                                            const apiUrl = process.env.REACT_APP_API_URL || '';
+                                            const response = await fetch(`${apiUrl}/api/upload/clear-cache`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify({ initData }),
+                                            });
+
+                                            const data = await response.json();
+                                            setMessage(data.message || 'Cache cleared');
+                                            setTimeout(() => window.location.reload(), 1000);
+                                        } catch (error) {
+                                            setMessage('Error: Failed to clear cache');
+                                        }
+                                    }}
+                                    className="clear-cache-btn"
+                                    style={{ marginBottom: '1rem' }}
+                                >
+                                    🗑️ Clear All Cache
+                                </button>
                             </div>
 
                             {lessonStructure.length > 0 ? (
