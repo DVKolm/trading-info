@@ -35,8 +35,7 @@ logger.info('Starting Trading Info Server', {
 // API Routes
 app.use('/api/lessons', lessonsRouter);
 app.use('/api/subscription', subscriptionRouter);
-app.use('/api/upload-lesson', uploadRouter.post);
-app.use('/api/delete-lesson', uploadRouter.delete);
+app.use('/api/upload', uploadRouter);
 app.use('/api/image', imageRouter);
 
 // Serve static files AFTER API routes
