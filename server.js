@@ -26,10 +26,11 @@ app.use(express.json());
 app.use(logRequests);
 
 // Log server startup
-logger.info('Starting Trading Info Server', {
+logger.info('🚀 Starting H.E.A.R.T. Trading Info Server', {
   port: PORT,
   nodeEnv: process.env.NODE_ENV,
-  isProduction
+  isProduction,
+  time: new Date().toISOString()
 });
 
 // API Routes
@@ -71,12 +72,12 @@ async function startServer() {
   
   try {
     // Try to initialize database connection
-    logger.info('🔧 Initializing database connection...');
+    logger.info('🔧 Connecting to PostgreSQL database...');
     await db.initialize();
-    logger.info('✅ Database connection established');
+    logger.info('✅ Database connected successfully');
     databaseStatus = 'Connected';
   } catch (error) {
-    logger.warn('⚠️ Database connection failed, continuing with file-based operation:', error.message);
+    logger.warn('⚠️ Database unavailable - using file-based mode:', error.message);
     databaseStatus = 'File-based fallback';
   }
 
@@ -87,23 +88,24 @@ async function startServer() {
     console.log(`Static files served from: ${path.join(__dirname, 'client/build')}`);
     console.log(`Database status: ${databaseStatus}`);
     
-    logger.info('🚀 Server started successfully', {
-      port: PORT,
+    logger.info('✅ H.E.A.R.T. Server ready', {
+      url: `http://localhost:${PORT}`,
       environment: isProduction ? 'Production' : 'Development',
-      database: databaseStatus
+      database: databaseStatus,
+      endpoints: ['/api/lessons', '/api/upload', '/api/subscription']
     });
   });
 }
 
 // Graceful shutdown handling
 process.on('SIGTERM', async () => {
-  logger.info('🛑 Received SIGTERM, shutting down gracefully');
+  logger.info('🛑 SIGTERM received - shutting down gracefully...');
   await db.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  logger.info('🛑 Received SIGINT, shutting down gracefully');
+  logger.info('🛑 SIGINT received - shutting down gracefully...');
   await db.close();
   process.exit(0);
 });

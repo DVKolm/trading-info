@@ -8,16 +8,16 @@ const logger = require('../config/logger');
 // Get lesson folders for upload
 router.get('/folders', async (req, res) => {
     try {
-        logger.info('Getting lesson folders for upload');
+        logger.info('📁 Retrieving available lesson folders');
         const folders = await lessonService.getLessonFolders();
         
-        logger.info('Lesson folders retrieved successfully', {
-            folderCount: folders.length
+        logger.info(`✅ Found ${folders.length} lesson folders`, {
+            folders: folders.map(f => f.name)
         });
         
         res.json({ folders });
     } catch (error) {
-        logger.error('Error getting lesson folders', {
+        logger.error('❌ Failed to get lesson folders', {
             error: error.message,
             stack: error.stack
         });
@@ -28,7 +28,7 @@ router.get('/folders', async (req, res) => {
 // Get lessons structure (with database fallback)
 router.get('/structure', async (req, res) => {
     try {
-        logger.info('Getting lessons structure');
+        logger.info('🗂️ Building lesson structure tree');
         
         // Try enhanced service first (database), fallback to file system
         let structure;
@@ -37,26 +37,26 @@ router.get('/structure', async (req, res) => {
             
             // If database returns empty structure, use file system
             if (!structure || structure.length === 0) {
-                logger.info('Database returned empty structure, falling back to file system');
+                logger.info('⚠️ Database returned empty structure, falling back to file system');
                 structure = await lessonService.getLessonStructure();
-                logger.info('✅ Using file system for lesson structure');
+                logger.info('📂 Using file system for lesson structure');
             } else {
-                logger.info('✅ Using database for lesson structure');
+                logger.info('💾 Using database for lesson structure');
             }
         } catch (dbError) {
-            logger.warn('Database unavailable, falling back to file system:', dbError.message);
+            logger.warn('⚠️ Database unavailable, falling back to file system:', dbError.message);
             structure = await lessonService.getLessonStructure();
-            logger.info('✅ Using file system for lesson structure (error fallback)');
+            logger.info('📂 Using file system for lesson structure (error fallback)');
         }
         
-        logger.info('Lessons structure retrieved successfully', {
-            itemCount: structure.length,
-            source: structure.length > 0 ? 'database/filesystem' : 'unknown'
+        logger.info(`✅ Lesson structure built`, {
+            totalFolders: structure.length,
+            totalLessons: structure.reduce((sum, folder) => sum + (folder.lessons?.length || 0), 0)
         });
         
         res.json({ structure });
     } catch (error) {
-        logger.error('Error getting lessons structure', {
+        logger.error('❌ Failed to build lessons structure', {
             error: error.message,
             stack: error.stack
         });
@@ -74,7 +74,7 @@ router.get('/content/*', async (req, res) => {
         let lessonData;
         try {
             lessonData = await enhancedLessonService.getLessonContent(lessonPath);
-            logger.info('✅ Using database for lesson content');
+            logger.info('💾 Retrieved lesson content from database');
             
             // Track lesson open event if user ID available
             if (telegramId) {
@@ -84,7 +84,7 @@ router.get('/content/*', async (req, res) => {
                 });
             }
         } catch (dbError) {
-            logger.warn('Database unavailable, falling back to file system:', dbError.message);
+            logger.warn('⚠️ Database unavailable, falling back to file system:', dbError.message);
             lessonData = await lessonService.getLessonContent(lessonPath);
         }
         
@@ -97,7 +97,7 @@ router.get('/content/*', async (req, res) => {
             return res.status(404).json({ error: 'Lesson not found' });
         }
         
-        logger.error('Error getting lesson content:', error);
+        logger.error('❌ Failed to get lesson content:', error);
         res.status(500).json({ error: 'Failed to get lesson content' });
     }
 });
@@ -111,11 +111,11 @@ router.get('/resolve', async (req, res) => {
             return res.status(400).json({ error: 'Link name is required' });
         }
         
-        logger.info('Resolving internal link:', linkName);
+        logger.info('🔗 Resolving internal link:', linkName);
         const result = await lessonService.resolveLessonLink(linkName);
         res.json(result);
     } catch (error) {
-        logger.error('Error resolving internal link:', error);
+        logger.error('❌ Failed to resolve internal link:', error);
         res.status(500).json({ 
             error: 'Internal server error',
             message: `Failed to resolve link`
@@ -132,15 +132,15 @@ router.get('/search', async (req, res) => {
         let results;
         try {
             results = await enhancedLessonService.searchLessons(query);
-            logger.info('✅ Using database for lesson search');
+            logger.info('🔍 Searching lessons in database');
         } catch (dbError) {
-            logger.warn('Database unavailable, falling back to file system:', dbError.message);
+            logger.warn('⚠️ Database unavailable, falling back to file system:', dbError.message);
             results = await lessonService.searchLessons(query);
         }
         
         res.json({ results });
     } catch (error) {
-        logger.error('Error searching lessons:', error);
+        logger.error('❌ Failed to search lessons:', error);
         res.status(500).json({ error: 'Failed to search lessons' });
     }
 });
