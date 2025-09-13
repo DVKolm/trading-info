@@ -105,7 +105,12 @@ async function importLessonToDatabase(lessonPath, targetFolder) {
 // Custom ZIP extraction function with proper encoding handling
 async function extractZipWithProperEncoding(zip, targetDir) {
     const entries = zip.getEntries();
-    
+    const extractedFiles = {
+        markdownFiles: [],
+        assetFiles: [],
+        allFiles: []
+    };
+
     for (const entry of entries) {
         try {
             // Get raw bytes of the entry name from the ZIP entry
@@ -115,40 +120,58 @@ async function extractZipWithProperEncoding(zip, targetDir) {
                     rawBytes = Array.from(entry.rawEntryName);
                 }
             } catch (rawError) {
-                logger.debug('Could not access raw entry name bytes', { 
+                logger.debug('Could not access raw entry name bytes', {
                     entryName: entry.entryName,
-                    error: rawError.message 
+                    error: rawError.message
                 });
             }
-            
+
             // Fix encoding issues in the entry name using raw bytes
             let fixedEntryName = fixEncodingIssues(entry.entryName, rawBytes);
-            
+
             // Apply additional server-side text correction
             fixedEntryName = fixCorruptedRussianTextServer(fixedEntryName);
-            
+
             // Use the fixed name for creating the entry path
             const entryPath = path.join(targetDir, fixedEntryName);
-            
+
             // Ensure the directory structure exists
             if (entry.isDirectory) {
                 await fs.ensureDir(entryPath);
+                logger.info('Created directory', { path: entryPath });
             } else {
                 // Ensure parent directory exists
                 await fs.ensureDir(path.dirname(entryPath));
-                
+
                 // Extract file content
                 const content = entry.getData();
                 await fs.writeFile(entryPath, content);
+
+                // Categorize extracted files
+                const ext = path.extname(fixedEntryName).toLowerCase();
+                const fileInfo = {
+                    originalName: entry.entryName,
+                    fixedName: fixedEntryName,
+                    path: entryPath,
+                    relativePath: path.relative(targetDir, entryPath),
+                    size: content.length
+                };
+
+                if (ext === '.md') {
+                    extractedFiles.markdownFiles.push(fileInfo);
+                } else if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.pdf', '.mp4', '.mov'].includes(ext)) {
+                    extractedFiles.assetFiles.push(fileInfo);
+                }
+                extractedFiles.allFiles.push(fileInfo);
+
+                logger.info('Extracted file', {
+                    original: entry.entryName,
+                    fixed: fixedEntryName,
+                    size: content.length,
+                    type: ext === '.md' ? 'markdown' : (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'].includes(ext) ? 'image' : 'other')
+                });
             }
-            
-            logger.info('Extracted ZIP entry', {
-                original: entry.entryName,
-                fixed: fixedEntryName,
-                isDirectory: entry.isDirectory,
-                hasRawBytes: !!rawBytes
-            });
-            
+
         } catch (error) {
             logger.error('Error extracting ZIP entry', {
                 entryName: entry.entryName,
@@ -157,6 +180,15 @@ async function extractZipWithProperEncoding(zip, targetDir) {
             });
         }
     }
+
+    // Log extraction summary
+    logger.info('ZIP extraction completed', {
+        totalFiles: extractedFiles.allFiles.length,
+        markdownFiles: extractedFiles.markdownFiles.length,
+        assetFiles: extractedFiles.assetFiles.length
+    });
+
+    return extractedFiles;
 }
 
 // Upload lesson endpoint
@@ -200,30 +232,48 @@ router.post('/lesson', upload.single('lesson'), validateTelegramAuth, requireAdm
             const lessonName = path.basename(mdFileEntry.entryName, '.md');
 
             // Use selected folder or default to intermediate level
-            const targetDir = targetFolder ? 
-                path.join(LESSONS_DIR, targetFolder) : 
+            const targetDir = targetFolder ?
+                path.join(LESSONS_DIR, targetFolder) :
                 path.join(LESSONS_DIR, 'Средний уровень (Подписка)');
-            
+
             // Ensure target directory exists
             await fs.ensureDir(targetDir);
-            
+
             // Custom extraction with proper encoding handling
-            await extractZipWithProperEncoding(zip, targetDir);
+            const extractedFiles = await extractZipWithProperEncoding(zip, targetDir);
 
-            // Import all .md files from the extracted ZIP to database
-            const mdFileName = path.basename(mdFileEntry.entryName);
-            const lessonDir = path.join(targetDir, lessonName);
-            const mdFilePath = path.join(lessonDir, mdFileName);
-
-            if (await fs.pathExists(mdFilePath)) {
-                const relativePath = path.relative(LESSONS_DIR, mdFilePath);
-                const dbSuccess = await importLessonToDatabase(relativePath, targetFolder || 'Средний уровень (Подписка)');
-                if (dbSuccess) {
-                    logger.info('✅ Lesson imported to database successfully');
-                } else {
-                    logger.warn('⚠️ Lesson saved to file system only (database unavailable)');
+            // Import all extracted markdown files to database
+            let importedCount = 0;
+            for (const mdFile of extractedFiles.markdownFiles) {
+                try {
+                    const relativePath = path.relative(LESSONS_DIR, mdFile.path);
+                    const dbSuccess = await importLessonToDatabase(relativePath, targetFolder || 'Средний уровень (Подписка)');
+                    if (dbSuccess) {
+                        importedCount++;
+                        logger.info('✅ Lesson imported to database successfully', {
+                            filename: mdFile.fixedName,
+                            path: relativePath
+                        });
+                    } else {
+                        logger.warn('⚠️ Lesson saved to file system only (database unavailable)', {
+                            filename: mdFile.fixedName
+                        });
+                    }
+                } catch (error) {
+                    logger.error('❌ Failed to import lesson to database', {
+                        filename: mdFile.fixedName,
+                        error: error.message
+                    });
                 }
             }
+
+            logger.info('📦 ZIP extraction and import summary', {
+                totalFilesExtracted: extractedFiles.allFiles.length,
+                markdownFiles: extractedFiles.markdownFiles.length,
+                assetFiles: extractedFiles.assetFiles.length,
+                markdownFilesImported: importedCount,
+                assets: extractedFiles.assetFiles.map(f => f.fixedName)
+            });
 
         } else if (path.extname(originalName) === '.md') {
             const lessonName = path.basename(originalName, '.md');
@@ -387,23 +437,57 @@ router.delete('/lesson', express.json(), validateTelegramAuth, requireAdmin, asy
         // Clean up database records for this lesson
         try {
             if (db.isConnected) {
-                // Delete the lesson itself from database
+                // First, check what lessons exist with similar paths
+                const existingLessons = await db.query(
+                    'SELECT id, path, title FROM lessons WHERE path ILIKE $1 OR path ILIKE $2',
+                    [`%${path.basename(lessonPath)}%`, `${lessonPath}%`]
+                );
+
+                logger.info('🔍 Found lessons that might match', {
+                    lessonPath,
+                    searchPattern: path.basename(lessonPath),
+                    foundLessons: existingLessons.rows
+                });
+
+                // Delete the lesson itself from database (try exact match first)
                 const lessonDeleteResult = await db.query(
                     'DELETE FROM lessons WHERE path = $1',
                     [lessonPath]
                 );
 
                 if (lessonDeleteResult.rowCount > 0) {
-                    logger.info(`✅ Deleted lesson from database`, {
+                    logger.info(`✅ Deleted lesson from database (exact match)`, {
                         lessonPath,
+                        deletedCount: lessonDeleteResult.rowCount,
                         userId: user.id
                     });
+                } else {
+                    // Try alternative path patterns if exact match failed
+                    const normalizedPath = lessonPath.replace(/\\/g, '/');
+                    const alternativeDeleteResult = await db.query(
+                        'DELETE FROM lessons WHERE path = $1 OR path ILIKE $2',
+                        [normalizedPath, `%${path.basename(lessonPath)}%`]
+                    );
+
+                    if (alternativeDeleteResult.rowCount > 0) {
+                        logger.info(`✅ Deleted lesson from database (pattern match)`, {
+                            lessonPath,
+                            normalizedPath,
+                            deletedCount: alternativeDeleteResult.rowCount,
+                            userId: user.id
+                        });
+                    } else {
+                        logger.warn('⚠️ No database records found to delete', {
+                            lessonPath,
+                            normalizedPath
+                        });
+                    }
                 }
 
                 // Delete progress records for this lesson path
                 const progressDeleteResult = await db.query(
-                    'DELETE FROM user_progress WHERE lesson_path = $1',
-                    [lessonPath]
+                    'DELETE FROM user_progress WHERE lesson_path = $1 OR lesson_path ILIKE $2',
+                    [lessonPath, `%${path.basename(lessonPath)}%`]
                 );
 
                 if (progressDeleteResult.rowCount > 0) {
@@ -415,8 +499,8 @@ router.delete('/lesson', express.json(), validateTelegramAuth, requireAdmin, asy
 
                 // Delete analytics events for this lesson
                 const analyticsDeleteResult = await db.query(
-                    'DELETE FROM analytics_events WHERE lesson_path = $1',
-                    [lessonPath]
+                    'DELETE FROM analytics_events WHERE lesson_path = $1 OR lesson_path ILIKE $2',
+                    [lessonPath, `%${path.basename(lessonPath)}%`]
                 );
 
                 if (analyticsDeleteResult.rowCount > 0) {
