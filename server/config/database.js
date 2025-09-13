@@ -39,25 +39,40 @@ class DatabaseManager {
     }
 
     async initialize() {
+        let postgresOk = false;
+        let redisOk = false;
+
+        // Test PostgreSQL connection
         try {
-            // Test PostgreSQL connection
             await this.pgPool.query('SELECT NOW()');
             this.isConnected = true;
+            postgresOk = true;
             logger.info('✅ PostgreSQL connected successfully');
+        } catch (pgError) {
+            logger.error('❌ PostgreSQL connection failed:', pgError.message);
+            this.isConnected = false;
+        }
 
-            // Connect to Redis
+        // Connect to Redis (don't fail if Redis is down)
+        try {
             await this.redisClient.connect();
             this.isRedisConnected = true;
+            redisOk = true;
             logger.info('✅ Redis connected successfully');
-
-            // Set up error handlers
-            this.setupErrorHandlers();
-
-            return true;
-        } catch (error) {
-            logger.error('❌ Database initialization failed:', error);
-            throw error;
+        } catch (redisError) {
+            logger.warn('⚠️ Redis connection failed (will work without cache):', redisError.message);
+            this.isRedisConnected = false;
         }
+
+        // Set up error handlers
+        this.setupErrorHandlers();
+
+        // Only throw error if PostgreSQL fails (Redis is optional)
+        if (!postgresOk) {
+            throw new Error('PostgreSQL connection required but failed');
+        }
+
+        return true;
     }
 
     setupErrorHandlers() {

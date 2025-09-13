@@ -19,8 +19,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 async function importLessonToDatabase(lessonPath, targetFolder) {
     try {
         if (!db.isConnected) {
-            logger.warn('⚠️ Database not connected, skipping lesson import');
-            return;
+            logger.warn('⚠️ Database not connected, skipping lesson import to database');
+            logger.warn('⚠️ Lesson will be saved to file system only');
+            return false; // Return false to indicate database save failed
         }
 
         // Read the lesson file
@@ -83,11 +84,14 @@ async function importLessonToDatabase(lessonPath, targetFolder) {
             await db.redisClient.del(cacheKey);
         }
 
+        return true; // Return true to indicate successful database save
+
     } catch (error) {
         logger.error('❌ Failed to import lesson to database', {
             error: error.message,
             lessonPath
         });
+        return false; // Return false on error
     }
 }
 
@@ -206,7 +210,12 @@ router.post('/lesson', upload.single('lesson'), validateTelegramAuth, requireAdm
 
             if (await fs.pathExists(mdFilePath)) {
                 const relativePath = path.relative(LESSONS_DIR, mdFilePath);
-                await importLessonToDatabase(relativePath, targetFolder || 'Средний уровень (Подписка)');
+                const dbSuccess = await importLessonToDatabase(relativePath, targetFolder || 'Средний уровень (Подписка)');
+                if (dbSuccess) {
+                    logger.info('✅ Lesson imported to database successfully');
+                } else {
+                    logger.warn('⚠️ Lesson saved to file system only (database unavailable)');
+                }
             }
 
         } else if (path.extname(originalName) === '.md') {
@@ -245,7 +254,12 @@ router.post('/lesson', upload.single('lesson'), validateTelegramAuth, requireAdm
 
             // Import lesson to database
             const relativePath = path.relative(LESSONS_DIR, filePath);
-            await importLessonToDatabase(relativePath, targetFolder || 'Средний уровень (Подписка)');
+            const dbSuccess = await importLessonToDatabase(relativePath, targetFolder || 'Средний уровень (Подписка)');
+            if (dbSuccess) {
+                logger.info('✅ Lesson imported to database successfully');
+            } else {
+                logger.warn('⚠️ Lesson saved to file system only (database unavailable)');
+            }
 
         } else {
             return res.status(400).json({ error: 'Unsupported file type. Please upload a .md or .zip file.' });
