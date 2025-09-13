@@ -37,6 +37,13 @@ async function importLessonToDatabase(lessonPath, targetFolder) {
         const title = parsed.data.title || fileName.replace('.md', '');
         const wordCount = parsed.content.split(/\s+/).filter(word => word.length > 0).length;
 
+        // Generate slug from title
+        const slug = title.toLowerCase()
+            .replace(/[^\w\s-]/g, '') // Remove special chars
+            .replace(/\s+/g, '-') // Replace spaces with -
+            .replace(/--+/g, '-') // Replace multiple - with single -
+            .trim();
+
         // Extract lesson number if present
         const lessonNumberMatch = title.match(/Урок\s+(\d+)/i);
         const lessonNumber = lessonNumberMatch ? parseInt(lessonNumberMatch[1], 10) : null;
@@ -57,11 +64,11 @@ async function importLessonToDatabase(lessonPath, targetFolder) {
                     UPDATE lessons
                     SET title = $2, content = $3, html_content = $4,
                         frontmatter = $5, word_count = $6, parent_folder = $7,
-                        lesson_number = $8, file_hash = $9, updated_at = CURRENT_TIMESTAMP
+                        lesson_number = $8, file_hash = $9, slug = $10, updated_at = CURRENT_TIMESTAMP
                     WHERE path = $1
                 `, [lessonPath, title, parsed.content, htmlContent,
                     JSON.stringify(parsed.data), wordCount, targetFolder,
-                    lessonNumber, fileHash]);
+                    lessonNumber, fileHash, slug]);
 
                 logger.info('📝 Updated lesson in database', { lessonPath, title });
             }
@@ -69,11 +76,11 @@ async function importLessonToDatabase(lessonPath, targetFolder) {
             // Insert new lesson
             await db.query(`
                 INSERT INTO lessons (path, title, content, html_content, frontmatter,
-                                   word_count, parent_folder, lesson_number, file_hash)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                                   word_count, parent_folder, lesson_number, file_hash, slug)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             `, [lessonPath, title, parsed.content, htmlContent,
                 JSON.stringify(parsed.data), wordCount, targetFolder,
-                lessonNumber, fileHash]);
+                lessonNumber, fileHash, slug]);
 
             logger.info('➕ Added lesson to database', { lessonPath, title });
         }
