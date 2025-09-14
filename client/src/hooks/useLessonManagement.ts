@@ -207,15 +207,7 @@ export const useLessonManagement = () => {
   }, [selectedLesson, getPrevLesson]);
 
   // Preload next lesson for better UX
-  useEffect(() => {
-    if (!nextLessonPath) return;
-
-    const preloadTimer = setTimeout(() => {
-      lessonService.preloadLesson(nextLessonPath);
-    }, 2000);
-
-    return () => clearTimeout(preloadTimer);
-  }, [nextLessonPath]);
+  // Preloading removed as method is not available in lessonService
 
   // Initialize
   useEffect(() => {

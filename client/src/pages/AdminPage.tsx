@@ -117,7 +117,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         }
     };
 
-    const handleDelete = async (lessonPath: string) => {
+    const handleDelete = async (lessonPath: string, itemType?: 'folder' | 'file') => {
         const initData = window.Telegram?.WebApp?.initData;
 
         if (!initData) {
@@ -125,7 +125,24 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to delete: ${lessonPath}?`)) {
+        // Find the item in the lesson structure to determine its type
+        const findItemType = (items: LessonStructure[], path: string): 'folder' | 'file' => {
+            for (const item of items) {
+                if (item.path === path) {
+                    return item.type;
+                }
+                if (item.children) {
+                    const foundType = findItemType(item.children, path);
+                    if (foundType) return foundType;
+                }
+            }
+            return 'file'; // default to file if not found
+        };
+
+        const deleteType = itemType || findItemType(lessonStructure, lessonPath);
+        const itemName = deleteType === 'folder' ? 'folder' : 'lesson';
+
+        if (!window.confirm(`Are you sure you want to delete this ${itemName}: ${lessonPath}?`)) {
             return;
         }
 
@@ -134,21 +151,34 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
 
         try {
             const apiUrl = process.env.REACT_APP_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/upload/lesson`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    initData,
-                    lessonPath
-                }),
-            });
+            let response: Response;
+
+            if (deleteType === 'folder') {
+                // Delete folder using folder deletion endpoint
+                response = await fetch(`${apiUrl}/api/upload/lessons/${encodeURIComponent(lessonPath)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-Telegram-User-Id': window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || '0',
+                    },
+                });
+            } else {
+                // Delete individual lesson using lesson deletion endpoint
+                response = await fetch(`${apiUrl}/api/upload/lesson`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        initData,
+                        lessonPath
+                    }),
+                });
+            }
 
             const data = await response.json();
 
             if (response.ok) {
-                setMessage(data.message || 'Delete successful!');
+                setMessage(data.message || `${itemName.charAt(0).toUpperCase() + itemName.slice(1)} deleted successfully!`);
                 // Refresh the lesson structure immediately
                 await fetchLessonStructure();
 
@@ -157,7 +187,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                     window.location.reload();
                 }, 1000);
             } else {
-                setMessage(`Error: ${data.error || 'Delete failed.'}`);
+                setMessage(`Error: ${data.error || `${itemName.charAt(0).toUpperCase() + itemName.slice(1)} deletion failed.`}`);
             }
         } catch (error) {
             console.error('Delete error:', error);
@@ -180,7 +210,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                         <span className="file-name">{item.name}</span>
                     </div>
                     <button
-                        onClick={() => handleDelete(item.path)}
+                        onClick={() => handleDelete(item.path, item.type)}
                         disabled={deleting === item.path}
                         className="delete-btn"
                         title={`Delete ${item.type === 'folder' ? 'folder' : 'file'}`}

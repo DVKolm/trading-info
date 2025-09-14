@@ -2,81 +2,41 @@ import { LessonStructure, Lesson, SearchResult } from '../types';
 
 const API_URL = process.env.REACT_APP_API_URL || '';
 
-// ✅ FIX: Bounded LRU cache to prevent memory leaks
-class LRUCache<K, V> {
-  private cache = new Map<K, V>();
-  private maxSize: number;
-
-  constructor(maxSize: number = 50) {
-    this.maxSize = maxSize;
-  }
-
-  get(key: K): V | undefined {
-    const value = this.cache.get(key);
-    if (value !== undefined) {
-      // Move to end (most recently used)
-      this.cache.delete(key);
-      this.cache.set(key, value);
-    }
-    return value;
-  }
-
-  set(key: K, value: V): void {
-    if (this.cache.has(key)) {
-      this.cache.delete(key);
-    } else if (this.cache.size >= this.maxSize) {
-      // Remove least recently used (first item)
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    this.cache.set(key, value);
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  size(): number {
-    return this.cache.size;
-  }
-}
-
-// ✅ FIX: Bounded cache instead of unlimited Map
-const lessonCache = new LRUCache<string, Lesson>(50); // Max 50 lessons
-
 export const lessonService = {
   /**
-   * Fetch lesson structure from the server
+   * Fetch lesson structure from the server - backend handles transformation
    */
   async fetchLessonStructure(): Promise<LessonStructure[]> {
-    const response = await fetch(`${API_URL}/api/lessons/structure`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch lesson structure');
+    try {
+      const response = await fetch(`${API_URL}/api/lessons/structure`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch lesson structure: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Backend now returns properly formatted structure
+      return data.structure || data;
+    } catch (error) {
+      console.error('Error fetching lesson structure:', error);
+      throw error instanceof Error ? error : new Error('Unknown error fetching lesson structure');
     }
-    const data = await response.json();
-    return data.structure;
   },
 
   /**
-   * Fetch specific lesson content with caching
+   * Fetch specific lesson content - backend handles caching
    */
   async fetchLessonContent(lessonPath: string): Promise<Lesson> {
-    // Check cache first
-    const cachedLesson = lessonCache.get(lessonPath);
-    if (cachedLesson) {
-      return cachedLesson;
-    }
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    const url = telegramId
+      ? `${API_URL}/api/lessons/content/${lessonPath}?telegramId=${telegramId}`
+      : `${API_URL}/api/lessons/content/${lessonPath}`;
 
-    const response = await fetch(`${API_URL}/api/lessons/content/${lessonPath}`);
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Failed to fetch lesson content');
     }
-    const lessonData = await response.json();
-    
-    // ✅ FIX: Cache with bounded size
-    lessonCache.set(lessonPath, lessonData);
-    
-    return lessonData;
+    return await response.json();
   },
 
   /**
@@ -88,45 +48,19 @@ export const lessonService = {
       throw new Error('Search failed');
     }
     const data = await response.json();
-    // Filter out folders, only show files
     return data.results.filter((result: any) => result.type === 'lesson' || result.type === 'file');
   },
 
   /**
-   * Preload lesson content for better UX
+   * Check if user has access to a lesson
    */
-  async preloadLesson(lessonPath: string): Promise<void> {
-    if (lessonCache.get(lessonPath)) return;
-
-    try {
-      const response = await fetch(`${API_URL}/api/lessons/content/${lessonPath}`);
-      if (response.ok) {
-        const lessonData = await response.json();
-        lessonCache.set(lessonPath, lessonData);
-      }
-    } catch (error) {
-      // Silently fail for preloading
-    }
-  },
-
-  /**
-   * Clear lesson cache
-   */
-  clearCache(): void {
-    lessonCache.clear();
-  },
-
-  /**
-   * Get cached lesson
-   */
-  getCachedLesson(lessonPath: string): Lesson | undefined {
-    return lessonCache.get(lessonPath);
-  },
-
-  /**
-   * ✅ FIX: Add cache size monitoring
-   */
-  getCacheSize(): number {
-    return lessonCache.size();
+  async checkLessonAccess(lessonPath: string): Promise<boolean> {
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    const response = await fetch(
+      `${API_URL}/api/subscription/access/check?telegramId=${telegramId || ''}&lessonPath=${encodeURIComponent(lessonPath)}`
+    );
+    if (!response.ok) return false;
+    const data = await response.json();
+    return data.hasAccess;
   }
 };

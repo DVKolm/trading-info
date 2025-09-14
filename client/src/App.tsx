@@ -11,7 +11,7 @@ import ErrorScreen from './components/ErrorScreen';
 
 // Hooks
 import { useLessonManagement } from './hooks/useLessonManagement';
-import { useSubscriptionManager } from './hooks/useSubscriptionManager';
+import { useSubscriptionManagerSimple as useSubscriptionManager } from './hooks/useSubscriptionManagerSimple';
 import { useThemeManager } from './hooks/useThemeManager';
 import { useScrollManager } from './hooks/useScrollManager';
 

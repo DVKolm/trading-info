@@ -3,7 +3,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { Lesson } from '../types';
-import { useProgressTracking } from '../hooks/useProgressTracking';
+import { useProgressTrackingSimple as useProgressTracking } from '../hooks/useProgressTrackingSimple';
 import MarkdownImageProcessor from './MarkdownImageProcessor';
 
 interface LessonViewerProps {
@@ -93,7 +93,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, alt, className, style }) => 
 };
 
 const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNavigateToLesson, nextLessonPath, prevLessonPath, onSidebarToggle, isSubscribed, onSubscriptionRequired }) => {
-  const { handleScroll } = useProgressTracking(lesson);
+  const { updateScrollProgress } = useProgressTracking(lesson);
   const lessonViewerRef = useRef<HTMLDivElement>(null);
 
   // Check if a lesson is premium/requires subscription
@@ -213,11 +213,12 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
   useEffect(() => {
     const handleScrollEvent = () => {
       if (!lessonViewerRef.current) return;
-      
+
       const scrollPosition = lessonViewerRef.current.scrollTop;
       const maxScroll = lessonViewerRef.current.scrollHeight - lessonViewerRef.current.clientHeight;
-      
-      handleScroll(scrollPosition, maxScroll);
+      const scrollProgress = maxScroll > 0 ? Math.min(scrollPosition / maxScroll, 1) : 0;
+
+      updateScrollProgress(scrollProgress);
     };
 
     const currentRef = lessonViewerRef.current;
@@ -225,7 +226,7 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
       currentRef.addEventListener('scroll', handleScrollEvent, { passive: true });
       return () => currentRef.removeEventListener('scroll', handleScrollEvent);
     }
-  }, [handleScroll]);
+  }, [updateScrollProgress]);
 
 
   // Memoized markdown components

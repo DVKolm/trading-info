@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { X, User } from 'lucide-react';
 
 // Lazy load the progress dashboard
-const ProgressDashboard = React.lazy(() => import('./ProgressDashboard'));
+const ProgressDashboard = React.lazy(() => import('./ProgressDashboardSimple'));
 
 interface UserProfileProps {
   onClose: () => void;
