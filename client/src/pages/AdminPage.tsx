@@ -123,10 +123,14 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
     };
 
     const handleDelete = async (lessonPath: string, itemType?: 'folder' | 'file') => {
+        console.log('🔍 Delete requested for path:', lessonPath, 'type:', itemType);
+
         const initData = window.Telegram?.WebApp?.initData;
+        console.log('📱 Telegram initData:', initData);
 
         if (!initData) {
             setMessage('Could not retrieve user authentication data.');
+            console.error('❌ No initData available');
             return;
         }
 
@@ -147,20 +151,29 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         const deleteType = itemType || findItemType(lessonStructure, lessonPath);
         const itemName = deleteType === 'folder' ? 'folder' : 'lesson';
 
+        console.log('🎯 Delete type determined:', deleteType, 'for item:', itemName);
+
         if (!window.confirm(`Are you sure you want to delete this ${itemName}: ${lessonPath}?`)) {
+            console.log('❌ User cancelled deletion');
             return;
         }
 
+        console.log('✅ User confirmed deletion, proceeding...');
         setDeleting(lessonPath);
         setMessage('');
 
         try {
             const apiUrl = process.env.REACT_APP_API_URL || '';
             let response: Response;
+            console.log('🌐 API URL:', apiUrl);
 
             if (deleteType === 'folder') {
                 // Delete folder using folder deletion endpoint
-                response = await fetch(`${apiUrl}/api/upload/lessons/${encodeURIComponent(lessonPath)}`, {
+                const url = `${apiUrl}/api/upload/lessons/${encodeURIComponent(lessonPath)}`;
+                console.log('📂 Deleting folder with URL:', url);
+                console.log('🔑 Using Telegram User ID:', window.Telegram?.WebApp?.initDataUnsafe?.user?.id);
+
+                response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
                         'X-Telegram-User-Id': window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || '0',
@@ -168,17 +181,25 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                 });
             } else {
                 // Delete individual lesson using lesson deletion endpoint
-                response = await fetch(`${apiUrl}/api/upload/lesson`, {
+                const url = `${apiUrl}/api/upload/lesson`;
+                const payload = {
+                    initData,
+                    lessonPath
+                };
+                console.log('📄 Deleting file with URL:', url);
+                console.log('📦 Request payload:', payload);
+
+                response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        initData,
-                        lessonPath
-                    }),
+                    body: JSON.stringify(payload),
                 });
             }
+
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response ok:', response.ok);
 
             const data = await response.json();
 
@@ -195,9 +216,11 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                 setMessage(`Error: ${data.error || `${itemName.charAt(0).toUpperCase() + itemName.slice(1)} deletion failed.`}`);
             }
         } catch (error) {
-            console.error('Delete error:', error);
-            setMessage('An unexpected error occurred.');
+            console.error('❌ Delete error:', error);
+            console.error('❌ Error details:', error instanceof Error ? error.message : 'Unknown error');
+            setMessage('An unexpected error occurred: ' + (error instanceof Error ? error.message : 'Unknown error'));
         } finally {
+            console.log('🏁 Delete operation finished, clearing deleting state');
             setDeleting(null);
         }
     };
