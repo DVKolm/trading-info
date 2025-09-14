@@ -63,7 +63,14 @@
       "WebFetch(domain:heart-trader.duckdns.org)",
       "Bash(tar:*)",
       "Bash(scp:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(cmd.exe /c deploy_now.bat)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:5.129.241.61)",
+      "Bash(.gradlew build -x test)",
+      "Read(//c/Users/IVA-PC/WebstormProjects/**)"
     ],
     "deny": [],
     "ask": []

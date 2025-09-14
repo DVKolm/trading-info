@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Trash2, ArrowLeft, File, Folder, AlertTriangle } from 'lucide-react';
+import { Upload, Trash2, ArrowLeft, File, Folder, AlertTriangle, FolderPlus } from 'lucide-react';
 import { LessonStructure } from '../types';
 
 interface AdminPageProps {
@@ -12,9 +12,12 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
     const [message, setMessage] = useState('');
     const [lessonStructure, setLessonStructure] = useState<LessonStructure[]>([]);
     const [deleting, setDeleting] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'upload' | 'manage'>('upload');
+    const [activeTab, setActiveTab] = useState<'upload' | 'manage' | 'create-folder'>('upload');
     const [folders, setFolders] = useState<{name: string, path: string}[]>([]);
     const [selectedFolder, setSelectedFolder] = useState<string>('');
+    const [newFolderName, setNewFolderName] = useState<string>('');
+    const [isPublicFolder, setIsPublicFolder] = useState<boolean>(true);
+    const [creatingFolder, setCreatingFolder] = useState(false);
 
     useEffect(() => {
         fetchFolders(); // Always fetch folders on mount
@@ -225,6 +228,61 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         }
     };
 
+    const handleCreateFolder = async () => {
+        if (!newFolderName.trim()) {
+            setMessage('Please enter a folder name.');
+            return;
+        }
+
+        const initData = window.Telegram?.WebApp?.initData;
+
+        if (!initData) {
+            setMessage('Could not retrieve user authentication data.');
+            return;
+        }
+
+        setCreatingFolder(true);
+        setMessage('');
+
+        try {
+            const apiUrl = process.env.REACT_APP_API_URL || '';
+            const folderName = isPublicFolder ?
+                newFolderName.trim() :
+                `${newFolderName.trim()} (Подписка)`;
+
+            const response = await fetch(`${apiUrl}/api/upload/folder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    initData,
+                    folderName,
+                    subscriptionRequired: !isPublicFolder
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setMessage(data.message || 'Folder created successfully!');
+                setNewFolderName('');
+                setIsPublicFolder(true);
+                // Refresh folders list
+                await fetchFolders();
+                // Switch to upload tab to show the new folder
+                setActiveTab('upload');
+            } else {
+                setMessage(`Error: ${data.error || 'Folder creation failed.'}`);
+            }
+        } catch (error) {
+            console.error('Create folder error:', error);
+            setMessage('An unexpected error occurred.');
+        } finally {
+            setCreatingFolder(false);
+        }
+    };
+
     const renderFileTree = (items: LessonStructure[], level = 0) => {
         return items.map((item) => (
             <div key={item.id} className="file-tree-item" style={{ marginLeft: `${level * 20}px` }}>
@@ -283,6 +341,13 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                 >
                     <Folder size={18} />
                     Manage Files
+                </button>
+                <button
+                    onClick={() => setActiveTab('create-folder')}
+                    className={`tab-btn ${activeTab === 'create-folder' ? 'active' : ''}`}
+                >
+                    <FolderPlus size={18} />
+                    Create Folder
                 </button>
             </div>
 
@@ -418,6 +483,74 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
                                     <p>No lessons found</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'create-folder' && (
+                    <div className="create-folder-section">
+                        <div className="create-folder-card">
+                            <div className="create-folder-header">
+                                <FolderPlus size={24} />
+                                <div>
+                                    <h2>Create New Folder</h2>
+                                    <p>Create a new folder for organizing lessons</p>
+                                </div>
+                            </div>
+
+                            <div className="folder-form">
+                                <div className="form-field">
+                                    <label htmlFor="folder-name" className="form-label">
+                                        Folder Name:
+                                    </label>
+                                    <input
+                                        id="folder-name"
+                                        type="text"
+                                        value={newFolderName}
+                                        onChange={(e) => setNewFolderName(e.target.value)}
+                                        placeholder="Enter folder name"
+                                        className="form-input"
+                                    />
+                                </div>
+
+                                <div className="form-field">
+                                    <div className="checkbox-container">
+                                        <input
+                                            id="public-folder"
+                                            type="checkbox"
+                                            checked={isPublicFolder}
+                                            onChange={(e) => setIsPublicFolder(e.target.checked)}
+                                            className="form-checkbox"
+                                        />
+                                        <label htmlFor="public-folder" className="checkbox-label">
+                                            Public folder (accessible without subscription)
+                                        </label>
+                                    </div>
+                                    <p className="checkbox-description">
+                                        {isPublicFolder
+                                            ? "✅ All users can access lessons in this folder"
+                                            : "🔒 Only subscribed users can access lessons in this folder"}
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={handleCreateFolder}
+                                    disabled={!newFolderName.trim() || creatingFolder}
+                                    className="create-folder-btn"
+                                >
+                                    {creatingFolder ? (
+                                        <>
+                                            <div className="loading-spinner" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FolderPlus size={18} />
+                                            Create Folder
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

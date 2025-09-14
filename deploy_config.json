@@ -1,0 +1,27 @@
+{
+  "git": {
+    "frontend_repo": "https://github.com/your-username/trading-info.git",
+    "backend_repo": "https://github.com/your-username/trading-info-backend.git",
+    "branch": "main"
+  },
+  "server": {
+    "host": "5.129.241.61",
+    "username": "root",
+    "password": "j91fQo*^Bm38Za",
+    "port": 22
+  },
+  "paths": {
+    "local_frontend": "C:/Users/IVA-PC/WebstormProjects/trading-info",
+    "local_backend": "C:/Users/IVA-PC/WebstormProjects/trading-info-backend",
+    "server_frontend": "/var/www/trading-info",
+    "server_backend": "/var/www/trading-info-backend"
+  },
+  "environment": {
+    "postgres_password": "Ke5zrdsf",
+    "redis_password": "",
+    "telegram_bot_token": "8453388495:AAGcNlP0GuFLQH49Kh4xzR831SQC_o5LrQw",
+    "telegram_channel_id": "@DailyTradiBlog",
+    "telegram_admin_ids": "781182099",
+    "jwt_secret": ""
+  }
+}
