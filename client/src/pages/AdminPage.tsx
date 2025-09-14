@@ -42,7 +42,12 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
     const fetchLessonStructure = async () => {
         try {
             const apiUrl = process.env.REACT_APP_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/lessons/structure`);
+            const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || '0';
+            const response = await fetch(`${apiUrl}/api/upload/file-tree`, {
+                headers: {
+                    'X-Telegram-User-Id': telegramId
+                }
+            });
             const data = await response.json();
             setLessonStructure(data.structure);
         } catch (error) {
