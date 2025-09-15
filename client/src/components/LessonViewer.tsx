@@ -120,13 +120,13 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
       // Then, process image links ![[Image.png]] format
       processedContent = processedContent.replace(/!\[\[([^\]]+)\]\]/g, (match, linkText) => {
         const cleanLinkText = linkText.trim();
-        
+
         // This is definitely an image since it uses ![[]] syntax
         if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-          const filename = cleanLinkText.replace(/\s+/g, '');
+          const filename = cleanLinkText;
           const apiUrl = process.env.REACT_APP_API_URL || '';
-          const encodedFilename = btoa(filename);
-          
+          const encodedFilename = encodeURIComponent(filename);
+
           return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
         }
         
@@ -137,13 +137,13 @@ const LessonViewer: React.FC<LessonViewerProps> = React.memo(({ lesson, onNaviga
       // Then, process regular internal links [[Link Name]]
       processedContent = processedContent.replace(/\[\[([^\]]+)\]\]/g, (match, linkText) => {
         const cleanLinkText = linkText.trim();
-        
+
         // Check if it's an image (has image extension)
         if (cleanLinkText.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)) {
-          const filename = cleanLinkText.replace(/\s+/g, '');
+          const filename = cleanLinkText;
           const apiUrl = process.env.REACT_APP_API_URL || '';
-          const encodedFilename = btoa(filename);
-          
+          const encodedFilename = encodeURIComponent(filename);
+
           return `![${cleanLinkText}](${apiUrl}/api/image/${encodedFilename})`;
         }
         
